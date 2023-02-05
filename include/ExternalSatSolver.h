@@ -14,8 +14,9 @@ public:
     int num_minimization_clauses;
     bool last_clause_closed;
     std::vector<bool> model;
+    std::string solver_path;
 
-    ExternalSatSolver(int num_of_vars);
+    ExternalSatSolver(int num_of_vars, std::string path);
     void assume(int lit);
     void addClause(std::vector<int> & clause);
     void addMinimizationClause(std::vector<int> & clause);

@@ -33,6 +33,13 @@
 #include <vector>
 #include <string>
 
+struct params {
+	const AF af;
+	const std::string & arg;
+	std::vector<std::pair<std::string,std::string>> & atts;
+	std::vector<std::string> base_ext;
+};
+
 //std::vector<int> grounded_assumptions(const AF & af);
 void print_extension(const AF & af, const std::vector<uint32_t> & extension);
 void print_extension_ee(const AF & af, const std::vector<uint32_t> & extension);

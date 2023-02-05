@@ -77,3 +77,7 @@ void AF::initialize_vars() {
 		rejected_var[i] = ++count;
 	}
 }
+
+void AF::set_solver_path(string path) {
+	solver_path = path;
+}

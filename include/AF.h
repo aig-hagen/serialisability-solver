@@ -90,6 +90,7 @@ public:
 AF();
 
 semantics sem;
+std::string solver_path;
 
 uint32_t args;
 uint32_t count;
@@ -112,6 +113,8 @@ void add_attack(std::pair<std::string,std::string> att);
 
 void initialize_attackers();
 void initialize_vars();
+
+void set_solver_path(std::string path);
 
 };
 

@@ -3,10 +3,11 @@
 
 using namespace std;
 
-ExternalSatSolver::ExternalSatSolver(int num_of_vars) {
+ExternalSatSolver::ExternalSatSolver(int num_of_vars, string path) {
     num_vars = num_of_vars;
     num_clauses = 0;
     num_minimization_clauses = 0;
+    solver_path = path;
     
     last_clause_closed = true;
     clauses = std::vector<std::vector<int>>();
@@ -42,7 +43,7 @@ void ExternalSatSolver::addMinimizationClause(std::vector<int> & clause) {
 
 int ExternalSatSolver::solve() {
     //redi::pstream proc(solver_path, redi::pstreams::pstdout | redi::pstreams::pstdin | redi::pstreams::pstderr);
-    redi::pstream process("./lib/cadical-1.3.1/build/cadical");
+    redi::pstream process(solver_path);
     process << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     //std::cout << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     for(const std::vector<int> clause: clauses) {
