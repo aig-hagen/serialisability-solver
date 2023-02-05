@@ -182,7 +182,7 @@ std::set<vector<string>> ua_or_uc_initial(const AF & af) {
 	while (true) {
         // Compute one extension by finding a minimal solution to the KB
         // TODO: This should be outside of the loop and a copy should be used each loop
-        ExternalSatSolver solver = ExternalSatSolver(af.count);
+        ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
         Encodings::add_admissible(af, solver);
         Encodings::add_nonempty(af, solver);
         if (!clauses.empty())
@@ -303,7 +303,7 @@ bool unchallenged(const AF & original_af, const AF & af, vector<pair<string,stri
 
 /*
 bool initial(const AF & af) {
-    ExternalSatSolver solver = ExternalSatSolver(af.count);
+    ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
     Encodings::add_admissible(af, solver);
     Encodings::add_nonempty(af, solver);
 
@@ -328,7 +328,7 @@ bool initial(const AF & af) {
     vector<int> complement_clause;
     int count = 0;
     complement_clause.reserve(af.args);
-    ExternalSatSolver solver = ExternalSatSolver(af.count);
+    ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
     Encodings::add_admissible(af, solver);
     Encodings::add_nonempty(af, solver);
 	while (true) {

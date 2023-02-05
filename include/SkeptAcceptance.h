@@ -33,14 +33,7 @@
 
 namespace SkeptAcceptance {
 
-struct params;
-
 bool preferred(const AF & af, const std::string & arg);
-bool unchallenged(const AF & af, const std::string & arg, std::vector<std::pair<std::string,std::string>> & atts);
-bool unchallenged_r(params p);
-bool preferred_p(const AF & af, const std::string & arg, std::vector<std::pair<std::string,std::string>> & atts);
-bool preferred_p_r(params p);
-
 
 }
 

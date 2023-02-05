@@ -27,9 +27,9 @@
  */
 
 #include "AF.h"
-#include "SkeptAcceptance.h"
 #include "SingleExtension.h"
 #include "EnumExtensions.h"
+#include "Problems.h"
 
 #include <iostream>
 #include <fstream>
@@ -80,7 +80,7 @@ void print_usage(string solver_name)
 
 void print_version(string solver_name)
 {
-	cout << solver_name << " (version ICCMA'21)\n" << "Andreas Niskanen, University of Helsinki <andreas.niskanen@helsinki.fi>\n";
+	cout << solver_name << " (version ICCMA'21)\n" << "Lars Bengel, University of Hagen <lars.bengel@fernuni-hagen.de>\n";
 }
 
 void print_formats()
@@ -90,7 +90,7 @@ void print_formats()
 
 void print_problems()
 {
-	vector<string> tasks = {"DS","SE"};
+	vector<string> tasks = {"DS","SE", "EE"};
 	vector<string> sems = {"IT","PR", "UC"};
 	cout << "[";
 	for (uint32_t i = 0; i < tasks.size(); i++) {
@@ -122,12 +122,13 @@ int main(int argc, char ** argv)
 		{"f", required_argument, 0, 'f'},
 		{"fo", required_argument, 0, 'o'},
 		{"a", required_argument, 0, 'a'},
+		{"s", required_argument, 0, 's'},
 		{0, 0, 0, 0}
 	};
 
 	int option_index = 0;
 	int opt = 0;
-	string task, file, fileformat, query;
+	string task, file, fileformat, query, sat_path;
 
 	while ((opt = getopt_long_only(argc, argv, "", longopts, &option_index)) != -1) {
 		switch (opt) {
@@ -144,6 +145,9 @@ int main(int argc, char ** argv)
 				break;
 			case 'a':
 				query = optarg;
+				break;
+			case 's':
+				sat_path = optarg;
 				break;
 			default:
 				return 1;
@@ -284,6 +288,8 @@ int main(int argc, char ** argv)
 
 	af.initialize_vars();
 
+	af.set_solver_path(sat_path);
+
 	switch (string_to_task(task)) {
 		case DS:
 		{
@@ -295,10 +301,10 @@ int main(int argc, char ** argv)
 			switch (string_to_sem(task)) {
 				case PR:
 					//skept_accepted = SkeptAcceptance::preferred(af, query);
-					skept_accepted = SkeptAcceptance::preferred_p(af, query, atts);
+					skept_accepted = Problems::preferred_p(af, query, atts);
 					break;
 				case UC:
-					skept_accepted = SkeptAcceptance::unchallenged(af, query, atts);
+					skept_accepted = Problems::unchallenged(af, query, atts);
 					break;
 				default:
 					cerr << argv[0] << ": Unsupported semantics\n";

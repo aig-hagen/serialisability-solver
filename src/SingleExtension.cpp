@@ -36,7 +36,7 @@ namespace SingleExtension {
 
 bool initial(const AF & af)
 {
-	ExternalSatSolver solver = ExternalSatSolver(af.count);
+	ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
 	Encodings::add_nonempty(af, solver);
 	Encodings::add_admissible(af, solver);
 	bool sat = solver.solve();

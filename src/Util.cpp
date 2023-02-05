@@ -115,6 +115,9 @@ AF getReduct(const AF & af, vector<string> ext, vector<pair<string,string>> & at
 			reduct.add_argument(arg_str);
 		}
 	}
+
+	reduct.set_solver_path(af.solver_path);
+
 	if (!reduct.args) {
 		return reduct;
 	}
