@@ -27,7 +27,6 @@
  */
 
 #include "AF.h"
-#include "SingleExtension.h"
 #include "EnumExtensions.h"
 #include "Problems.h"
 
@@ -301,10 +300,10 @@ int main(int argc, char ** argv)
 			switch (string_to_sem(task)) {
 				case PR:
 					//skept_accepted = SkeptAcceptance::preferred(af, query);
-					skept_accepted = Problems::preferred_p(af, query, atts);
+					skept_accepted = Problems::ds_preferred(af, query, atts);
 					break;
 				case UC:
-					skept_accepted = Problems::unchallenged(af, query, atts);
+					skept_accepted = Problems::ds_unchallenged(af, query, atts);
 					break;
 				default:
 					cerr << argv[0] << ": Unsupported semantics\n";
@@ -318,7 +317,7 @@ int main(int argc, char ** argv)
 			vector<int> extension;
 			switch (string_to_sem(task)) {
 				case IT:
-					SingleExtension::initial(af);
+					Problems::se_initial(af);
 					break;
 				default:
 					cerr << argv[0] << ": Problem not supported!\n";
@@ -330,11 +329,11 @@ int main(int argc, char ** argv)
 		{
 			switch (string_to_sem(task)) {
 				case IT:
-					EnumExtensions::initial(af);
+					Problems::ee_initial(af);
 					break;
 				case UC:
 					cout << "GOING IN\n";
-					EnumExtensions::unchallenged(af, atts);
+					Problems::ee_unchallenged(af, atts);
 					break;
 				default:
 					cerr << argv[0] << ": Problem not supported!\n";

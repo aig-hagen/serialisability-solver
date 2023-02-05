@@ -27,9 +27,6 @@
  */
 
 #include "Encodings.h"
-#include "Util.h"
-#include <iostream>
-#include <fstream>
 
 using namespace std;
 
@@ -48,21 +45,6 @@ void add_rejected_clauses(const AF & af, ExternalSatSolver & solver) {
 			clause[j] = af.accepted_var[af.attackers[i][j]];
 		}
 		clause[af.attackers[i].size()] = -af.rejected_var[i];
-		solver.addClause(clause);
-	}
-}
-
-void add_range(const AF & af, ExternalSatSolver & solver) {
-	for (uint32_t i = 0; i < af.args; i++) {
-		vector<int> clause = { af.range_var[i], -af.accepted_var[i] };
-		solver.addClause(clause);
-	}
-	for (uint32_t i = 0; i < af.args; i++) {
-		vector<int> clause = { af.range_var[i], -af.rejected_var[i] };
-		solver.addClause(clause);
-	}
-	for (uint32_t i = 0; i < af.args; i++) {
-		vector<int> clause = { -af.range_var[i], af.accepted_var[i], af.rejected_var[i] };
 		solver.addClause(clause);
 	}
 }
@@ -99,19 +81,6 @@ void add_admissible(const AF & af, ExternalSatSolver & solver) {
 			vector<int> clause = { -af.accepted_var[i], af.rejected_var[af.attackers[i][j]] };
 			solver.addClause(clause);
 		}
-	}
-}
-
-void add_complete(const AF & af, ExternalSatSolver & solver)
-{
-	add_admissible(af, solver);
-	for (uint32_t i = 0; i < af.args; i++) {
-		vector<int> clause(af.attackers[i].size()+1);
-		for (uint32_t j = 0; j < af.attackers[i].size(); j++) {
-			clause[j] = -af.rejected_var[af.attackers[i][j]];
-		}
-		clause[af.attackers[i].size()] = af.accepted_var[i];
-		solver.addClause(clause);
 	}
 }
 

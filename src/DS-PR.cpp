@@ -12,12 +12,12 @@ std::atomic<int> num_active_threads(0);
 
 namespace Problems {
 
-bool preferred_p(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
+bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
 	preferred_ce_found = false;
     vector<string> ext;
 	//TODO Thread Logic and some kind of flag to kill all threads once counterexample is found
 	params p = {af, arg, atts, ext};
-    preferred_p_r(p);
+    ds_preferred_r(p);
 
 	// wait until all threads are done
 	while (num_active_threads > 0) {
@@ -27,7 +27,7 @@ bool preferred_p(const AF & af, string const & arg, vector<pair<string,string>> 
     return !preferred_ce_found;
 }
 
-bool preferred_p_r(params p) {
+bool ds_preferred_r(params p) {
 	thread_counter++;
 	num_active_threads++;
 	// check termination flag (some other thread found a counterexample)
@@ -112,7 +112,7 @@ bool preferred_p_r(params p) {
 				new_ext.insert(new_ext.end(), extension.begin(), extension.end());
 
 				params new_p =  {reduct, p.arg, p.atts, new_ext};
-				std::thread t(preferred_p_r, new_p);
+				std::thread t(ds_preferred_r, new_p);
 				t.detach();
 			}
         } else {

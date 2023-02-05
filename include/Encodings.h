@@ -37,8 +37,6 @@ namespace Encodings {
 void add_conflict_free(const AF & af, ExternalSatSolver & solver);
 void add_nonempty(const AF & af, ExternalSatSolver & solver);
 void add_admissible(const AF & af, ExternalSatSolver & solver);
-void add_complete(const AF & af, ExternalSatSolver & solver);
-void add_range(const AF & af, ExternalSatSolver & solver);
 
 }
 

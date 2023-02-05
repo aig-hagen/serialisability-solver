@@ -1,4 +1,3 @@
-#include "EnumExtensions.h"
 #include "Problems.h"
 #include <algorithm>
 #include <iostream>
@@ -11,21 +10,21 @@ namespace Problems {
 
 std::atomic<bool> unchallenged_ce_found{false};
 
-bool unchallenged(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
+bool ds_unchallenged(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
     vector<string> ext;
 	//TODO Thread Logic and some kind of flag to kill all threads once counterexample is found
 	params p = {af, arg, atts, ext};
-    unchallenged_r(p);
+    ds_unchallenged_r(p);
 
     return true;
 }
 
-bool unchallenged_r(params p) {
+bool ds_unchallenged_r(params p) {
 	if (unchallenged_ce_found) {
 		return true;
 	}
 	
-    set<vector<string>> ua_uc_initial_sets = EnumExtensions::ua_or_uc_initial(p.af);
+    set<vector<string>> ua_uc_initial_sets = get_ua_or_uc_initial(p.af);
 
 	if (unchallenged_ce_found) {
 		return true;
@@ -56,7 +55,7 @@ bool unchallenged_r(params p) {
         new_ext.insert(new_ext.end(), ext.begin(), ext.end());
 
 		params new_p =  {reduct, p.arg, p.atts, new_ext};
-		std::thread t(unchallenged_r, new_p);
+		std::thread t(ds_unchallenged_r, new_p);
 		t.detach();
         //unchallenged(original_af, reduct, arg, atts, new_ext);
     }
