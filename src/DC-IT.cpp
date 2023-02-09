@@ -6,16 +6,24 @@ using namespace std;
 
 namespace Problems {
 
-bool se_initial(const AF & af) {
+bool dc_initial(const AF & af, string const & arg) {
 	ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
 	Encodings::add_nonempty(af, solver);
 	Encodings::add_admissible(af, solver);
 
+    uint32_t arg_var = af.accepted_var[af.arg_to_int.find(arg)->second];
 	vector<uint32_t> extension;
 	bool foundExt = false;
 	while (true) {
+        solver.assume(arg_var);
 		int sat = solver.solve();
-		if (sat==20) break;
+		if (sat==20) {
+            if (foundExt) {
+                //TODO
+            } else {
+                break;
+            }
+        }
 		foundExt = true;
 		extension.clear();
 		for (uint32_t i = 0; i < af.args; i++) {
@@ -39,7 +47,7 @@ bool se_initial(const AF & af) {
 		solver.addMinimizationClause(min_complement_clause);
 	}
 	if (foundExt) {
-		print_extension_ee(af, extension);
+		std::cout << "YES\n";
 		return true;
 	} else {
 		std::cout << "NO\n";

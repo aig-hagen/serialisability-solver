@@ -48,6 +48,8 @@ void AF::add_attack(pair<string,string> att)
 	uint32_t target = arg_to_int[att.second];
 	attackers[target].push_back(source);
 	attacked[source].push_back(target);
+	unattacked[source] = false;
+	unattacked[target] = false;
 	if (source == target) {
 		self_attack[source] = true;
 	}
@@ -63,6 +65,7 @@ void AF::add_attack(pair<string,string> att)
 void AF::initialize_attackers() {
 	attackers.resize(args);
 	attacked.resize(args);
+	unattacked.resize(args, true);
 	self_attack.resize(args);
 }
 

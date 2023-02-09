@@ -33,7 +33,7 @@
 #include <unordered_map>
 #include <string>
 
-enum task { DS, SE, EE, UNKNOWN_TASK };
+enum task { DC, DS, SE, EE, CE, UNKNOWN_TASK };
 enum semantics { IT, UC, PR, GR, UNKNOWN_SEM };
 
 /* The following hash_combine function is from the Boost software library
@@ -100,6 +100,7 @@ std::unordered_map<std::string,uint32_t> arg_to_int;
 
 std::vector<std::vector<uint32_t>> attacked;
 std::vector<std::vector<uint32_t>> attackers;
+std::vector<bool> unattacked;
 std::vector<uint8_t> self_attack;
 std::unordered_map<std::pair<uint32_t,uint32_t>,bool> att_exists;
 std::unordered_map<std::pair<uint32_t,uint32_t>,bool> symmetric_attack;

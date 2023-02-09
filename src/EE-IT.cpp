@@ -196,5 +196,4 @@ bool ee_initial(const AF & af) {
 	return true;
 }
 
-
 }

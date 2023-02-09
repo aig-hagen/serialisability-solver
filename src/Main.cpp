@@ -47,9 +47,11 @@ static int problems_flag = 0;
 task string_to_task(string problem)
 {
 	string tmp = problem.substr(0, problem.find("-"));
+	if (tmp == "DC") return DC;
 	if (tmp == "DS") return DS;
 	if (tmp == "SE") return SE;
 	if (tmp == "EE") return EE;
+	if (tmp == "CE") return CE;
 	return UNKNOWN_TASK;
 }
 
@@ -89,8 +91,8 @@ void print_formats()
 
 void print_problems()
 {
-	vector<string> tasks = {"DS","SE", "EE"};
-	vector<string> sems = {"IT","PR", "UC"};
+	vector<string> tasks = {"DC", "DS", "SE", "EE", "CE"};
+	vector<string> sems = {"IT", "PR", "UC"};
 	cout << "[";
 	for (uint32_t i = 0; i < tasks.size(); i++) {
 		for (uint32_t j = 0; j < sems.size(); j++) {
@@ -290,6 +292,24 @@ int main(int argc, char ** argv)
 	af.set_solver_path(sat_path);
 
 	switch (string_to_task(task)) {
+		case DC:
+		{
+			if (query.empty()) {
+				cerr << argv[0] << ": Query argument must be specified via -a flag\n";
+				return 1;
+			}
+			bool cred_accepted = false;
+			switch (string_to_sem(task)) {
+				case IT:
+					cred_accepted = Problems::dc_initial(af, query);
+					break;
+				default:
+					cerr << argv[0] << ": Problem not supported!\n";
+					return 1;
+			}
+			cout << (cred_accepted ? "YES" : "NO") << "\n";
+			break;
+		}
 		case DS:
 		{
 			if (query.empty()) {
@@ -334,6 +354,18 @@ int main(int argc, char ** argv)
 				case UC:
 					cout << "GOING IN\n";
 					Problems::ee_unchallenged(af, atts);
+					break;
+				default:
+					cerr << argv[0] << ": Problem not supported!\n";
+					return 1;
+			}
+			break;
+		}
+		case CE:
+		{
+			switch (string_to_sem(task)) {
+				case IT:
+					Problems::ce_initial(af);
 					break;
 				default:
 					cerr << argv[0] << ": Problem not supported!\n";

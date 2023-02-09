@@ -62,13 +62,12 @@ int ExternalSatSolver::solve() {
         process << "\n";
         //std::cout << "\n";
     }
-    // TODO imcorporate assumptions again
-    //if (!assumptions.empty()) {
-    //    for(const int assumption: assumptions){
-    //        proc << assumption << " 0\n";
-    //        std::cout << assumption << " 0\n";
-    //    }
-    //}
+    if (!assumptions.empty()) {
+        for(const int assumption: assumptions){
+            process << assumption << " 0\n";
+            //std::cout << assumption << " 0\n";
+        }
+    }
     
     //std::cout << "-----------------------------------------------" << std::endl;
     assumptions.clear();

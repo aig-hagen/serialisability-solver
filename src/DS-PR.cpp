@@ -6,6 +6,7 @@
 
 using namespace std;
 
+// Variables for IPC
 std::atomic<bool> preferred_ce_found{false};
 std::atomic<int> thread_counter(0);
 std::atomic<int> num_active_threads(0);
@@ -30,14 +31,26 @@ bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>>
 bool ds_preferred_r(params p) {
 	thread_counter++;
 	num_active_threads++;
+	
+	// if arg is self-attacking it cannot be accepted
+	if (p.af.self_attack[p.af.arg_to_int.find(p.arg)->second]) {
+		num_active_threads--;
+		preferred_ce_found = true;
+		return false;
+	}
+
+	// if arg is unattacked in the af it has to be included in some preferred extension
+	if (p.af.unattacked[p.af.arg_to_int.find(p.arg)->second]) {
+		num_active_threads--;
+		return true;
+	}
+
 	// check termination flag (some other thread found a counterexample)
 	if (preferred_ce_found) {
 		num_active_threads--;
 		return true;
 	}
 
-	// TODO check if arg is unattacked
-	// TODO check self attack
 	// TODO check if arg is in gr(AF) or attacked by it
 	
     vector<string> extension;
@@ -106,7 +119,7 @@ bool ds_preferred_r(params p) {
 					preferred_ce_found = true;
 					return false;
 				}
-				//TODO trim atts after each reduct
+				//TODO trim atts after each reduct?
 				vector<string> new_ext;
 				new_ext.insert(new_ext.end(), p.base_ext.begin(), p.base_ext.end());
 				new_ext.insert(new_ext.end(), extension.begin(), extension.end());
@@ -116,7 +129,7 @@ bool ds_preferred_r(params p) {
 				t.detach();
 			}
         } else {
-			// no initial set found, thread done
+			// no further initial set found, thread done
 			num_active_threads--;
             return true;
         }

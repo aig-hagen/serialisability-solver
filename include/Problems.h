@@ -7,28 +7,43 @@
 
 namespace Problems {
 
-// DS-UC
-bool ds_unchallenged(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts);
-bool ds_unchallenged_r(params p);
+// INITIAL
 
-// DS-PR
-bool ds_preferred(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts);
-bool ds_preferred_r(params p);
+ //DC-IT
+bool dc_initial(const AF & af, std::string const & arg);
 
 // SE-IT
 bool se_initial(const AF & af);
-
-// SE-GR
-std::vector<std::string> se_grounded(const AF & af);
 
 // EE-IT
 bool ee_initial(const AF & af);
 std::set<std::vector<std::string>> get_ua_or_uc_initial(const AF & af); // helper method to get only the unattacked and unchallenged initial sets
 
+// CE-IT
+bool ce_initial(const AF & af); // counts the types of initial sets and their sizes
+
+
+// UNCHALLENGED
+
+// DS-UC
+bool ds_unchallenged(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts);
+bool ds_unchallenged_r(params p);
+
 // EE-UC
 bool ee_unchallenged(const AF & af, std::vector<std::pair<std::string,std::string>> & atts);
 bool ee_unchallenged_r(const AF & original_af, const AF & af, std::vector<std::pair<std::string,std::string>> & atts, std::vector<std::string> base_ext);
 
-}
 
+// PREFERRED
+
+// DS-PR
+bool ds_preferred(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts);
+bool ds_preferred_r(params p);
+
+//GROUNDED
+
+// SE-GR
+std::vector<std::string> se_grounded(const AF & af);
+
+}
 #endif
