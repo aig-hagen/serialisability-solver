@@ -13,13 +13,14 @@ std::atomic<bool> unchallenged_ce_found{false};
 bool ds_unchallenged(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
     vector<string> ext;
 	//TODO Thread Logic and some kind of flag to kill all threads once counterexample is found
-	params p = {af, arg, atts, ext};
-    ds_unchallenged_r(p);
+	//params p = {af, arg, atts, ext};
+    //ds_unchallenged_r(p);
 
     return true;
 }
 
 bool ds_unchallenged_r(params p) {
+	/*
 	if (unchallenged_ce_found) {
 		return true;
 	}
@@ -59,6 +60,7 @@ bool ds_unchallenged_r(params p) {
 		t.detach();
         //unchallenged(original_af, reduct, arg, atts, new_ext);
     }
+	*/
     return true;
 }
 }

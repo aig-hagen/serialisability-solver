@@ -7,9 +7,9 @@
 
 struct params {
 	const AF af;
-	const std::string & arg;
-	std::vector<std::pair<std::string,std::string>> & atts;
-	std::vector<std::string> base_ext;
+	const int & arg;
+	std::vector<std::vector<int>> encoding;
+	std::vector<int> assumptions;
 };
 
 //std::vector<int> grounded_assumptions(const AF & af);

@@ -319,8 +319,7 @@ int main(int argc, char ** argv)
 			bool skept_accepted = false;
 			switch (string_to_sem(task)) {
 				case PR:
-					//skept_accepted = SkeptAcceptance::preferred(af, query);
-					skept_accepted = Problems::ds_preferred(af, query, atts);
+					skept_accepted = Problems::ds_preferred(af, query);
 					break;
 				case UC:
 					skept_accepted = Problems::ds_unchallenged(af, query, atts);
