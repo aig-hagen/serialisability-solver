@@ -15,10 +15,24 @@ std::atomic<int> num_active_threads(0);
 namespace Problems {
 
 bool ds_preferred(const AF & af, string const & arg) {
+	std::ofstream outfile;
+	outfile.open("out.out", std::ios_base::app);
+	outfile << "STARTING COMPUTATION FOR: " << arg << ": " << af.arg_to_int.find(arg)->second << "\n";
+	outfile.close();
 	preferred_ce_found = false;
 	vector<vector<int>> encoding;
 	Encodings::add_admissible(af, encoding);
     Encodings::add_nonempty(af, encoding);
+
+	outfile.open("out.out", std::ios_base::app);
+	outfile << "ENCODING: \n";
+	for (size_t i = 0; i < encoding.size(); i++) {
+		for (size_t j = 0; j < encoding[i].size(); j++) {
+			outfile << encoding[i][j] << " ";
+		}
+		outfile << "\n";
+	}
+	outfile.close();
 
     vector<int> assumptions;
 	int arg_id = af.arg_to_int.find(arg)->second;
@@ -34,6 +48,14 @@ bool ds_preferred(const AF & af, string const & arg) {
 }
 
 bool ds_preferred_r(params p) {
+	std::ofstream outfile;
+	outfile.open("out.out", std::ios_base::app);
+	outfile << "STARTING THREAD\n";
+	outfile << "CURRENT ASSUMPTIONS: \n";
+	for (size_t j = 0; j < p.assumptions.size(); j++) {
+		outfile << p.assumptions[j] << "\n";
+	}
+	outfile.close();
 	thread_counter++;
 	num_active_threads++;
 	
@@ -66,6 +88,9 @@ bool ds_preferred_r(params p) {
 	ExternalSatSolver solver = ExternalSatSolver(p.af.count, p.af.solver_path);
 	solver.addClauses(p.encoding);
 
+	outfile.open("out.out", std::ios_base::app);
+	outfile << "STARTING INITIAL SET ITERATION\n";
+	outfile.close();
 	// iterate over the initial sets of the current AF
 	while (true) {
 		// check termination flag (some other thread found a counterexample)
@@ -109,18 +134,38 @@ bool ds_preferred_r(params p) {
         }
 		// found an initial set. Start a new thread with the initial set and the respective reduct
         if (foundExt) {
+			outfile.open("out.out", std::ios_base::app);
+			outfile << "FOUND INITIAL SET\n";
+			outfile.close();
 			acceptsArg = false;
 			// compute the assumptions for the S-reduct
 			assumptions.clear();
 			
+			outfile.open("out.out", std::ios_base::app);
+			outfile << "[";
 			for (int i = 0; i < extension.size(); i++) {
+				outfile << extension[i] << ":" << p.af.int_to_arg[extension[i]] << ", ";
+			}
+			outfile << "]\n";
+			outfile.close();
+
+			for (int i = 0; i < extension.size(); i++) {
+				outfile.open("out.out", std::ios_base::app);
+				outfile << extension[i] << ":\n";
+				outfile.close();
 				if (p.arg == extension[i]) {
+					outfile.open("out.out", std::ios_base::app);
+					outfile << "ARG ACCEPTED" << "\n";
+					outfile.close();
 					// If arg is in the initial set, the preferred extension accepts it and will never be a counterexample
 					acceptsArg = true;
 					break;
 				}
 				assumptions.push_back(p.af.accepted_var[extension[i]]);
-				for(auto const& attacked: p.af.attacked[i]) {
+				for(auto const& attacked: p.af.attacked[extension[i]]) {
+					outfile.open("out.out", std::ios_base::app);
+					outfile << p.arg << " vs " << attacked << "\n";
+					outfile.close();
 					if (p.arg == attacked) {
 						// If the argument is not present in the reduct a counterexample has been found
 						//cout << "NO\n";
@@ -134,6 +179,9 @@ bool ds_preferred_r(params p) {
 
 			// If the initial set does not accept 'arg', 
 			if (!acceptsArg) {
+				outfile.open("out.out", std::ios_base::app);
+				outfile << "STARTING THREAD WITH REDUCT\n";
+				outfile.close();
 				// add assumptions from previous steps
 				for (size_t i = 0; i < p.assumptions.size(); i++) {
 					assumptions.push_back(p.assumptions[i]);
