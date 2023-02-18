@@ -3,6 +3,10 @@
 
 using namespace std;
 
+/*
+ * The following is adapted from the fudge argumentation-solver
+ * and is subject to the GPL3 licence.
+*/
 ExternalSatSolver::ExternalSatSolver(int num_of_vars, string path) {
     num_vars = num_of_vars;
     num_clauses = 0;

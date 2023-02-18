@@ -3,6 +3,7 @@
 
 #include "AF.h"
 #include "Util.h"
+#include "Encodings.h"
 #include <set>
 
 namespace Problems {

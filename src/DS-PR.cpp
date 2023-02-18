@@ -1,4 +1,3 @@
-#include "Encodings.h"
 #include "Problems.h"
 #include <atomic>
 #include <thread>
@@ -17,7 +16,6 @@ namespace Problems {
 bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
 	preferred_ce_found = false;
     vector<string> ext;
-	//TODO Thread Logic and some kind of flag to kill all threads once counterexample is found
 	params p = {af, arg, atts, ext};
     ds_preferred_r(p);
 
@@ -30,7 +28,7 @@ bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>>
 }
 
 bool ds_preferred_r(params p) {
-	std::ofstream outfile;
+	//std::ofstream outfile;
 	//outfile.open("out.out", std::ios_base::app);
 	//outfile << "STARTING THREAD\n";
 	//outfile.close();
@@ -38,40 +36,56 @@ bool ds_preferred_r(params p) {
 	thread_counter++;
 	num_active_threads++;
 	
-	// if arg is self-attacking it cannot be accepted
+	/*
+	================================================================================================================================
+	Checking if 'arg' is self-attacking and thus never acceptable
+	*/
 	if (p.af.self_attack[p.af.arg_to_int.find(p.arg)->second]) {
 		//outfile.open("out.out", std::ios_base::app);
-		//outfile << "TERM NO --> ARG SELF-ATTACKING\n";
+		//outfile << "ARG SELF-ATTACKING --> NO\n";
 		//outfile.close();
 		num_active_threads--;
 		preferred_ce_found = true;
 		return false;
-	}
+	}//==============================================================================================================================
 
-	// if arg is unattacked in the af it has to be included in some preferred extension
+	/*
+	=================================================================================================================================
+	Checking if 'arg' is an unattacked argument, as a shortcut for selecting all the unatttacked initial sets
+	*/
 	if (p.af.unattacked[p.af.arg_to_int.find(p.arg)->second]) {
 		//outfile.open("out.out", std::ios_base::app);
-		//outfile << "TERM --> ARG UNATTACKED\n";
+		//outfile << "ARG UNATTACKED --> TERM\n";
 		//outfile.close();
 		num_active_threads--;
 		return true;
-	}
+	}//==============================================================================================================================
 
 	// check termination flag (some other thread found a counterexample)
 	if (preferred_ce_found) {
 		//outfile.open("out.out", std::ios_base::app);
-		//outfile << "TERM --> SIGNAL\n";
+		//outfile << "SIGNAL --> TERM\n";
 		//outfile.close();
 		num_active_threads--;
 		return true;
 	}
 
-	// TODO can be optimized slightly
+	/*
+	==================================================================================================================================
+	Checking if 'arg' is accepted or rejected by the grounded extension.
+	This is a shortcut for accepting all unattacked initial sets (and further unattacked initial sets revealed by that), since these
+	have to be accepted eventually anyway by every preferred extension.
+	If 'arg' is accepted by the grounded extension, this thread terminates since every preferred extension that would be constructed 
+	will contain 'arg' anyway.
+	If 'arg' is rejected by the grounded extension, we found an admissible extension, i.e., ext + grounded that does not contain 'arg'
+	If neither is the case, we move to the reduct wrt to the grounded extension to simplify
+	*/
+	// TODO can be optimized slightly, can save some loops by inlining reduct computation and acceptance/rejection checks for 'arg'
 	vector<string> grounded_ext = se_grounded(p.af);
 	for(auto const& arg: grounded_ext) {
 		if (arg == p.arg) {
 			//outfile.open("out.out", std::ios_base::app);
-			//outfile << "TERM --> ARG GROUNDED\n";
+			//outfile << "ARG GROUNDED --> TERM\n";
 			//outfile.close();
 			num_active_threads--;
 			return true;
@@ -80,13 +94,13 @@ bool ds_preferred_r(params p) {
 	AF af = getReduct(p.af, grounded_ext, p.atts);
 	if (af.arg_to_int.find(p.arg) == af.arg_to_int.end()) {
 		//outfile.open("out.out", std::ios_base::app);
-		//outfile << "GROUNDED REJECTS ARG --> TERM NO \n";
+		//outfile << "GROUNDED REJECTS ARG --> NO \n";
 		//outfile.close();
-		//cout << "NO\n";
 		num_active_threads--;
 		preferred_ce_found = true;
 		return false;
-	}
+	}//==================================================================================================================================
+
 	//outfile.open("out.out", std::ios_base::app);
 	//outfile << "REMOVED GROUNDED EXT: ";
 	//for(auto const& arg: grounded_ext) {
@@ -95,16 +109,28 @@ bool ds_preferred_r(params p) {
 	//outfile << "\n";
 	//outfile.close();
 
+	/*
+	======================================================================================================================================
+	Computing the SCCs of 'af' to utilise for further computation, since initial sets are always contained in a single SCC
+	*/
+	// TODO find best way to implement this
+	//vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
+
+	//=====================================================================================================================================
 	
+	/*
+	=======================================================================================================================================
+	Initializing Solver.
+	Creating the encoding for admissibility and non-emptyness.
+	*/
     vector<string> extension;
     vector<int> complement_clause;
     complement_clause.reserve(af.args);
 	ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
     Encodings::add_admissible(af, solver);
     Encodings::add_nonempty(af, solver);
-	//outfile.open("out.out", std::ios_base::app);
-	//outfile << "ENCODING CREATED\n";
-	//outfile.close();
+	//======================================================================================================================================
+	
 
 	//outfile.open("out.out", std::ios_base::app);
 	//outfile << "STARTING INITIAL SET ITERATION\n";

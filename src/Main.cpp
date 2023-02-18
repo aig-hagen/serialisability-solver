@@ -1,4 +1,8 @@
 /*!
+ * The following is largely taken from the mu-toksia argumentation-solver
+ * and is subject to the following licence.
+ *
+ * 
  * Copyright (c) <2020> <Andreas Niskanen, University of Helsinki>
  * 
  * 

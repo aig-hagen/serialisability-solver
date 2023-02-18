@@ -1,4 +1,23 @@
+
+#include "Encodings.h"
+
+using namespace std;
+
+namespace Encodings {
+
+void add_nonempty(const AF & af, ExternalSatSolver & solver) {
+	vector<int> clause(af.args);
+	for (uint32_t i = 0; i < af.args; i++) {
+		clause[i] = af.accepted_var[i];
+	}
+	solver.addClause(clause);
+}
+
 /*!
+ * The following is largely taken from the mu-toksia solver
+ * and is subject to the following licence.
+ *
+ * 
  * Copyright (c) <2020> <Andreas Niskanen, University of Helsinki>
  * 
  * 
@@ -25,12 +44,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
-#include "Encodings.h"
-
-using namespace std;
-
-namespace Encodings {
 
 void add_rejected_clauses(const AF & af, ExternalSatSolver & solver) {
 	for (uint32_t i = 0; i < af.args; i++) {
@@ -61,14 +74,6 @@ void add_conflict_free(const AF & af, ExternalSatSolver & solver) {
 			solver.addClause(clause);
 		}
 	}
-}
-
-void add_nonempty(const AF & af, ExternalSatSolver & solver) {
-	vector<int> clause(af.args);
-	for (uint32_t i = 0; i < af.args; i++) {
-		clause[i] = af.accepted_var[i];
-	}
-	solver.addClause(clause);
 }
 
 void add_admissible(const AF & af, ExternalSatSolver & solver) {

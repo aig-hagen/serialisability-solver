@@ -1,12 +1,14 @@
-#include "Encodings.h"
 #include "Problems.h"
-#include <iostream>
 #include <stack>
 
 using namespace std;
 
 namespace Problems {
 
+/*
+ * The function se_grounded is adapted from the fudge argumentation-solver
+ * and is subject to the GPL3 licence. 
+*/
 vector<string> se_grounded(const AF & af) {
 	vector<uint32_t> num_attackers;
 	num_attackers.resize(af.args, 0);
