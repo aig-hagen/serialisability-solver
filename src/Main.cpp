@@ -62,6 +62,7 @@ semantics string_to_sem(string problem)
 	if (tmp == "IT") return IT;
 	if (tmp == "UC") return UC;
 	if (tmp == "PR") return PR;
+	if (tmp == "GR") return GR;
 	return UNKNOWN_SEM;
 }
 
@@ -319,7 +320,8 @@ int main(int argc, char ** argv)
 			bool skept_accepted = false;
 			switch (string_to_sem(task)) {
 				case PR:
-					skept_accepted = Problems::ds_preferred(af, query);
+					//skept_accepted = SkeptAcceptance::preferred(af, query);
+					skept_accepted = Problems::ds_preferred(af, query, atts);
 					break;
 				case UC:
 					skept_accepted = Problems::ds_unchallenged(af, query, atts);
@@ -335,6 +337,8 @@ int main(int argc, char ** argv)
 		{
 			vector<int> extension;
 			switch (string_to_sem(task)) {
+				case GR:
+					Problems::se_grounded(af);
 				case IT:
 					Problems::se_initial(af);
 					break;

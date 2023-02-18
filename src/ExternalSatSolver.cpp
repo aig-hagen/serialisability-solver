@@ -30,12 +30,6 @@ void ExternalSatSolver::addClause(std::vector<int> & clause) {
     clauses[num_clauses-1].push_back(0);
 }
 
-void ExternalSatSolver::addClauses(std::vector<std::vector<int>> & clauses) {
-    for (size_t i = 0; i < clauses.size(); i++) {
-        addClause(clauses[i]);
-    }
-}
-
 void ExternalSatSolver::addMinimizationClause(std::vector<int> & clause) {
     if(!last_clause_closed){
         // this should not happen
@@ -112,17 +106,15 @@ int ExternalSatSolver::solve() {
 }
 
 int ExternalSatSolver::solve(std::vector<int> assumptions) {
-    for(auto const& assummption: assumptions) {
-        assume(assummption);
+    for(auto const& assumption: assumptions) {
+        assume(assumption);
     }
     return solve();
 }
 
 void ExternalSatSolver::free() {
     clauses.clear();
-    num_clauses = 0;
     minimization_clauses.clear();
-    num_minimization_clauses = 0;
     assumptions.clear();
     model.clear();
 }

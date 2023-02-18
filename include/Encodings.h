@@ -34,9 +34,6 @@
 
 namespace Encodings {
 
-void add_conflict_free(const AF & af, std::vector<std::vector<int>> & encoding);
-void add_nonempty(const AF & af, std::vector<std::vector<int>> & encoding);
-void add_admissible(const AF & af, std::vector<std::vector<int>> & encoding);
 void add_conflict_free(const AF & af, ExternalSatSolver & solver);
 void add_nonempty(const AF & af, ExternalSatSolver & solver);
 void add_admissible(const AF & af, ExternalSatSolver & solver);

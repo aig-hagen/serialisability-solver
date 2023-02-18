@@ -37,7 +37,7 @@ bool ee_unchallenged_r(const AF & original_af, const AF & af, std::vector<std::p
 // PREFERRED
 
 // DS-PR
-bool ds_preferred(const AF & af, std::string const & arg);
+bool ds_preferred(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts);
 bool ds_preferred_r(params p);
 
 //GROUNDED

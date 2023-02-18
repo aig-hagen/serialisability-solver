@@ -19,7 +19,6 @@ public:
     ExternalSatSolver(int num_of_vars, std::string path);
     void assume(int lit);
     void addClause(std::vector<int> & clause);
-    void addClauses(std::vector<std::vector<int>> & clauses);
     void addMinimizationClause(std::vector<int> & clause);
     int solve();
     int solve(std::vector<int> assumptions);

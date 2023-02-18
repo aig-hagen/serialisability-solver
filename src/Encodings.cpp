@@ -32,58 +32,6 @@ using namespace std;
 
 namespace Encodings {
 
-void add_rejected_clauses(const AF & af, vector<vector<int>> & encoding) {
-	for (uint32_t i = 0; i < af.args; i++) {
-		vector<int> additional_clause = { -af.rejected_var[i], -af.accepted_var[i] };
-		encoding.push_back(additional_clause);
-		for (uint32_t j = 0; j < af.attackers[i].size(); j++) {
-			vector<int> clause = { af.rejected_var[i], -af.accepted_var[af.attackers[i][j]] };
-			encoding.push_back(clause);
-		}
-		vector<int> clause(af.attackers[i].size() + 1);
-		for (uint32_t j = 0; j < af.attackers[i].size(); j++) {
-			clause[j] = af.accepted_var[af.attackers[i][j]];
-		}
-		clause[af.attackers[i].size()] = -af.rejected_var[i];
-		encoding.push_back(clause);
-	}
-}
-
-void add_conflict_free(const AF & af, vector<vector<int>> & encoding) {
-	for (uint32_t i = 0; i < af.args; i++) {
-		for (uint32_t j = 0; j < af.attackers[i].size(); j++) {
-			vector<int> clause;
-			if (i != af.attackers[i][j]) {
-				clause = { -af.accepted_var[i], -af.accepted_var[af.attackers[i][j]] };
-			} else {
-				clause = { -af.accepted_var[i] };
-			}
-			encoding.push_back(clause);
-		}
-	}
-}
-
-void add_nonempty(const AF & af, vector<vector<int>> & encoding) {
-	vector<int> clause(af.args);
-	for (uint32_t i = 0; i < af.args; i++) {
-		clause[i] = af.accepted_var[i];
-	}
-	encoding.push_back(clause);
-}
-
-void add_admissible(const AF & af, vector<vector<int>> & encoding) {
-	add_conflict_free(af, encoding);
-	add_rejected_clauses(af, encoding);
-	for (uint32_t i = 0; i < af.args; i++) {
-		if (af.self_attack[i]) continue;
-		for (uint32_t j = 0; j < af.attackers[i].size(); j++) {
-			if (af.symmetric_attack.at(make_pair(af.attackers[i][j], i))) continue;
-			vector<int> clause = { -af.accepted_var[i], af.rejected_var[af.attackers[i][j]] };
-			encoding.push_back(clause);
-		}
-	}
-}
-
 void add_rejected_clauses(const AF & af, ExternalSatSolver & solver) {
 	for (uint32_t i = 0; i < af.args; i++) {
 		vector<int> additional_clause = { -af.rejected_var[i], -af.accepted_var[i] };
