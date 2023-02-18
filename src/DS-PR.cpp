@@ -14,29 +14,11 @@ std::atomic<int> num_active_threads(0);
 
 namespace Problems {
 
-bool ds_preferred(const AF & af, string const & arg) {
-	std::ofstream outfile;
-	outfile.open("out.out", std::ios_base::app);
-	outfile << "STARTING COMPUTATION FOR: " << arg << ": " << af.arg_to_int.find(arg)->second << "\n";
-	outfile.close();
+bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
 	preferred_ce_found = false;
-	vector<vector<int>> encoding;
-	Encodings::add_admissible(af, encoding);
-    Encodings::add_nonempty(af, encoding);
-
-	outfile.open("out.out", std::ios_base::app);
-	outfile << "ENCODING: \n";
-	for (size_t i = 0; i < encoding.size(); i++) {
-		for (size_t j = 0; j < encoding[i].size(); j++) {
-			outfile << encoding[i][j] << " ";
-		}
-		outfile << "\n";
-	}
-	outfile.close();
-
-    vector<int> assumptions;
-	int arg_id = af.arg_to_int.find(arg)->second;
-	params p = {af, arg_id, encoding, assumptions};
+    vector<string> ext;
+	//TODO Thread Logic and some kind of flag to kill all threads once counterexample is found
+	params p = {af, arg, atts, ext};
     ds_preferred_r(p);
 
 	// wait until all threads are done
@@ -49,52 +31,84 @@ bool ds_preferred(const AF & af, string const & arg) {
 
 bool ds_preferred_r(params p) {
 	std::ofstream outfile;
-	outfile.open("out.out", std::ios_base::app);
-	outfile << "STARTING THREAD\n";
-	outfile << "CURRENT ASSUMPTIONS: \n";
-	for (size_t j = 0; j < p.assumptions.size(); j++) {
-		outfile << p.assumptions[j] << "\n";
-	}
-	outfile.close();
+	//outfile.open("out.out", std::ios_base::app);
+	//outfile << "STARTING THREAD\n";
+	//outfile.close();
+	
 	thread_counter++;
 	num_active_threads++;
 	
 	// if arg is self-attacking it cannot be accepted
-	if (p.af.self_attack[p.arg]) {
+	if (p.af.self_attack[p.af.arg_to_int.find(p.arg)->second]) {
+		//outfile.open("out.out", std::ios_base::app);
+		//outfile << "TERM NO --> ARG SELF-ATTACKING\n";
+		//outfile.close();
 		num_active_threads--;
 		preferred_ce_found = true;
 		return false;
 	}
 
 	// if arg is unattacked in the af it has to be included in some preferred extension
-	if (p.af.unattacked[p.arg]) {
+	if (p.af.unattacked[p.af.arg_to_int.find(p.arg)->second]) {
+		//outfile.open("out.out", std::ios_base::app);
+		//outfile << "TERM --> ARG UNATTACKED\n";
+		//outfile.close();
 		num_active_threads--;
 		return true;
 	}
 
 	// check termination flag (some other thread found a counterexample)
 	if (preferred_ce_found) {
+		//outfile.open("out.out", std::ios_base::app);
+		//outfile << "TERM --> SIGNAL\n";
+		//outfile.close();
 		num_active_threads--;
 		return true;
 	}
 
-	// TODO check if arg is in gr(AF) or attacked by it
-
-	vector<int> assumptions;
-    vector<int> extension;
+	// TODO can be optimized slightly
+	vector<string> grounded_ext = se_grounded(p.af);
+	for(auto const& arg: grounded_ext) {
+		if (arg == p.arg) {
+			//outfile.open("out.out", std::ios_base::app);
+			//outfile << "TERM --> ARG GROUNDED\n";
+			//outfile.close();
+			num_active_threads--;
+			return true;
+		}
+	}
+	AF af = getReduct(p.af, grounded_ext, p.atts);
+	if (af.arg_to_int.find(p.arg) == af.arg_to_int.end()) {
+		//outfile.open("out.out", std::ios_base::app);
+		//outfile << "GROUNDED REJECTS ARG --> TERM NO \n";
+		//outfile.close();
+		//cout << "NO\n";
+		num_active_threads--;
+		preferred_ce_found = true;
+		return false;
+	}
+	
+	
+    vector<string> extension;
     vector<int> complement_clause;
-	bool acceptsArg = false;
-    complement_clause.reserve(p.af.args);
-	ExternalSatSolver solver = ExternalSatSolver(p.af.count, p.af.solver_path);
-	solver.addClauses(p.encoding);
+    complement_clause.reserve(af.args);
+	ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
+    Encodings::add_admissible(af, solver);
+    Encodings::add_nonempty(af, solver);
+	//outfile.open("out.out", std::ios_base::app);
+	//outfile << "ENCODING CREATED\n";
+	//outfile.close();
 
-	outfile.open("out.out", std::ios_base::app);
-	outfile << "STARTING INITIAL SET ITERATION\n";
-	outfile.close();
+	//outfile.open("out.out", std::ios_base::app);
+	//outfile << "STARTING INITIAL SET ITERATION\n";
+	//outfile.close();
 	// iterate over the initial sets of the current AF
 	while (true) {
 		// check termination flag (some other thread found a counterexample)
 		if (preferred_ce_found) {
+			//outfile.open("out.out", std::ios_base::app);
+			//outfile << "TERM --> SIGNAL\n";
+			//outfile.close();
 			num_active_threads--;
 			return true;
 		}
@@ -102,31 +116,41 @@ bool ds_preferred_r(params p) {
 		// Minimization of the first found model
         bool foundExt = false;
         while (true) {
-            int sat = solver.solve(p.assumptions);
+            int sat = solver.solve();
 
 			// check termination flag (some other thread found a counterexample)
 			if (preferred_ce_found) {
+				//outfile.open("out.out", std::ios_base::app);
+				//outfile << "TERM --> SIGNAL\n";
+				//outfile.close();
 				num_active_threads--;
 				return true;
 			}
 
             if (sat == 20) break;
             // If we reach this once, an extension has been found
+			//outfile.open("out.out", std::ios_base::app);
+			//outfile << "FOUND MODEL: ";
             foundExt = true;
             extension.clear();
-            for (uint32_t i = 0; i < p.af.args; i++) {
-                if (solver.model[p.af.accepted_var[i]]) {
-                    extension.push_back(i);
+            for (uint32_t i = 0; i < af.args; i++) {
+                if (solver.model[af.accepted_var[i]]) {
+                    extension.push_back(af.int_to_arg[i]);
                 }
             }
+			//for(auto const& arg: extension) {
+				//outfile << arg << ",";
+			//}
+			//outfile << "\n";
+			//outfile.close();
 			// add clauses to force the solver to look for a subset of the extension
             vector<int> min_complement_clause;
-            min_complement_clause.reserve(p.af.args);
-            for (uint32_t i = 0; i < p.af.args; i++) {
-                if (solver.model[p.af.accepted_var[i]]) {
-                    min_complement_clause.push_back(-p.af.accepted_var[i]);
+            min_complement_clause.reserve(af.args);
+            for (uint32_t i = 0; i < af.args; i++) {
+                if (solver.model[af.accepted_var[i]]) {
+                    min_complement_clause.push_back(-af.accepted_var[i]);
                 } else {
-                    vector<int> unit_clause = { -p.af.accepted_var[i] };
+                    vector<int> unit_clause = { -af.accepted_var[i] };
                     solver.addMinimizationClause(unit_clause);
                 }
             }
@@ -134,64 +158,43 @@ bool ds_preferred_r(params p) {
         }
 		// found an initial set. Start a new thread with the initial set and the respective reduct
         if (foundExt) {
-			outfile.open("out.out", std::ios_base::app);
-			outfile << "FOUND INITIAL SET\n";
-			outfile.close();
-			acceptsArg = false;
-			// compute the assumptions for the S-reduct
-			assumptions.clear();
-			
-			outfile.open("out.out", std::ios_base::app);
-			outfile << "[";
-			for (int i = 0; i < extension.size(); i++) {
-				outfile << extension[i] << ":" << p.af.int_to_arg[extension[i]] << ", ";
-			}
-			outfile << "]\n";
-			outfile.close();
+			//outfile.open("out.out", std::ios_base::app);
+			//outfile << "FOUND MINIMAL MODEL\n";
+			//outfile.close();
+			// Break Conditions
 
-			for (int i = 0; i < extension.size(); i++) {
-				outfile.open("out.out", std::ios_base::app);
-				outfile << extension[i] << ":\n";
-				outfile.close();
-				if (p.arg == extension[i]) {
-					outfile.open("out.out", std::ios_base::app);
-					outfile << "ARG ACCEPTED" << "\n";
-					outfile.close();
-					// If arg is in the initial set, the preferred extension accepts it and will never be a counterexample
-					acceptsArg = true;
-					break;
-				}
-				assumptions.push_back(p.af.accepted_var[extension[i]]);
-				for(auto const& attacked: p.af.attacked[extension[i]]) {
-					outfile.open("out.out", std::ios_base::app);
-					outfile << p.arg << " vs " << attacked << "\n";
-					outfile.close();
-					if (p.arg == attacked) {
-						// If the argument is not present in the reduct a counterexample has been found
-						//cout << "NO\n";
-						num_active_threads--;
-						preferred_ce_found = true;
-						return false;
-					}
-					assumptions.push_back(p.af.rejected_var[attacked]);
-				}					
-			}
+			// If arg is in the initial set, the preferred extension accepts it and will never be a counterexample
+			if (std::find(extension.begin(), extension.end(), p.arg) != extension.end()) {
+				//outfile.open("out.out", std::ios_base::app);
+				//outfile << "MODEL ACCEPTS ARG --> SKIP\n";
+				//outfile.close();
+				// Extension would contain arg, no thread needs to be created and continue with the next initial set
+			} else {
+				// If arg gets rejected by the initial set, we found a counterexample 
+				const AF reduct = getReduct(af, extension, p.atts);
 
-			// If the initial set does not accept 'arg', 
-			if (!acceptsArg) {
-				outfile.open("out.out", std::ios_base::app);
-				outfile << "STARTING THREAD WITH REDUCT\n";
-				outfile.close();
-				// add assumptions from previous steps
-				for (size_t i = 0; i < p.assumptions.size(); i++) {
-					assumptions.push_back(p.assumptions[i]);
+				// If the argument is not present in the reduct a counterexample has been found
+				if (reduct.arg_to_int.find(p.arg) == reduct.arg_to_int.end()) {
+					//outfile.open("out.out", std::ios_base::app);
+					//outfile << "MODEL REJECTS ARG --> TERM NO \n";
+					//outfile.close();
+					//cout << "NO\n";
+					num_active_threads--;
+					preferred_ce_found = true;
+					return false;
 				}
-				// create a new thread
-				params new_p =  {p.af, p.arg, p.encoding, assumptions};
+				//TODO trim atts after each reduct?
+				vector<string> new_ext;
+				new_ext.insert(new_ext.end(), p.base_ext.begin(), p.base_ext.end());
+				new_ext.insert(new_ext.end(), extension.begin(), extension.end());
+
+				//outfile.open("out.out", std::ios_base::app);
+				//outfile << "DETACHING NEW THREAD\n";
+				//outfile.close();
+				params new_p =  {reduct, p.arg, p.atts, new_ext};
 				std::thread t(ds_preferred_r, new_p);
 				t.detach();
 			}
-			
         } else {
 			// no further initial set found, thread done
 			num_active_threads--;
@@ -200,14 +203,13 @@ bool ds_preferred_r(params p) {
 
 		// add complement clause to prevent the just found initial set
         complement_clause.clear();
-        for (uint32_t i = 0; i < p.af.args; i++) {
-            if (solver.model[p.af.accepted_var[i]]) {
-                complement_clause.push_back(-p.af.accepted_var[i]);
+        for (uint32_t i = 0; i < af.args; i++) {
+            if (solver.model[af.accepted_var[i]]) {
+                complement_clause.push_back(-af.accepted_var[i]);
             } else {
                 //complement_clause.push_back(-af.rejected_var[i]);
             }
         }
-		// TODO what happens if we add this to the encoding as well?
         solver.addClause(complement_clause);
 	}
 	num_active_threads--;
