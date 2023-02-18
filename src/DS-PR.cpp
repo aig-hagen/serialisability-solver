@@ -87,7 +87,14 @@ bool ds_preferred_r(params p) {
 		preferred_ce_found = true;
 		return false;
 	}
-	
+	//outfile.open("out.out", std::ios_base::app);
+	//outfile << "REMOVED GROUNDED EXT: ";
+	//for(auto const& arg: grounded_ext) {
+		//outfile << arg << ",";
+	//}
+	//outfile << "\n";
+	//outfile.close();
+
 	
     vector<string> extension;
     vector<int> complement_clause;
@@ -159,7 +166,11 @@ bool ds_preferred_r(params p) {
 		// found an initial set. Start a new thread with the initial set and the respective reduct
         if (foundExt) {
 			//outfile.open("out.out", std::ios_base::app);
-			//outfile << "FOUND MINIMAL MODEL\n";
+			//outfile << "FOUND MINIMAL MODEL: ";
+			//for(auto const& arg: extension) {
+				//outfile << arg << ",";
+			//}
+			//outfile << "\n";
 			//outfile.close();
 			// Break Conditions
 

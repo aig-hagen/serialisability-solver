@@ -2,28 +2,10 @@
 #include "Encodings.h"
 #include "Util.h"
 #include <unordered_set>
+#include <stack>
+#include <algorithm>
 
 using namespace std;
-
-/*
-vector<int> grounded_assumptions(const AF & af)
-{
-	//ExternalSatSolver solver = ExternalSatSolver(af.count, 2*af.args); TODO ??
-	ExternalSatSolver solver = ExternalSatSolver(af.count);
-	Encodings::add_complete(af, solver);
-	bool sat = solver.propagate();
-	vector<int> new_assumptions;
-	if (sat) {
-		for (uint32_t i = 0; i < af.args; i++) {
-			if (solver.model[af.accepted_var[i]-1]) {
-				new_assumptions.push_back(af.accepted_var[i]);
-			} else if (solver.model[af.rejected_var[i]-1]) {
-				new_assumptions.push_back(-af.accepted_var[i]);
-			}
-		}
-	}
-	return new_assumptions;
-}*/
 
 void print_extension(const AF & af, const std::vector<uint32_t> & extension)
 {
@@ -104,4 +86,75 @@ AF getReduct(const AF & af, vector<string> ext, vector<pair<string,string>> & at
 		}
 	}
 	return reduct;
+}
+
+// computes the set of strongly connected components using Tarjan's algorithm
+// (internal recursive sub function)
+int __scc__compute_strongly_connected_components(int idx, uint32_t v, stack<uint32_t>* arg_stack, vector<vector<uint32_t>>* sccs, const AF & af, int index[], int lowlink[], bool stack_member[]) {
+    index[v] = idx;
+	lowlink[v] = idx;
+	idx++;
+    arg_stack->push(v);
+	stack_member[v] = true;
+    for(auto const& w: af.attacked[v]){
+        if (index[w] == -1) {
+	        idx = __scc__compute_strongly_connected_components(idx, w, arg_stack, sccs, af, index, lowlink, stack_member);
+    	    lowlink[v] = lowlink[v] > lowlink[w] ? lowlink[w] : lowlink[v];
+	    } else if (stack_member[w]) {
+            lowlink[v] = lowlink[v] > index[w] ? index[w] : lowlink[v];
+        }
+	}
+    if(lowlink[v] == index[v]){
+        vector<uint32_t> scc;
+        
+        uint32_t w;
+        do {
+            w = arg_stack->top();
+            arg_stack->pop();
+			stack_member[w] = false;
+            scc.push_back(w);
+        } while ( v != w);
+        sccs->push_back(scc);
+	}
+	return idx;
+}
+
+// computes the set of strongly connected components using Tarjan's algorithm
+vector<vector<uint32_t>> computeStronglyConnectedComponents(const AF & af) {
+    vector<vector<uint32_t>>* sccs = new vector<vector<uint32_t>>();
+    int idx = 0;
+    stack<uint32_t>* arg_stack = new stack<uint32_t>();
+
+    int* index = new int[af.args];
+    int* lowlink = new int[af.args];
+	bool* stack_member = new bool[af.args];
+    for (size_t i = 0; i < af.args; i++) {
+		index[i] = -1;
+		lowlink[i] = -1;
+		stack_member[i] = false;
+	}
+	
+    for(uint32_t i = 0; i < af.args; i++) {
+        if(index[i] == -1) {
+            idx = __scc__compute_strongly_connected_components(idx,i,arg_stack,sccs,af,index,lowlink, stack_member);
+        }
+    }
+    return *sccs;
+}
+
+// print the set of strongly connected components
+void print_sccs(const AF & af, vector<vector<uint32_t>> sccs) {
+    for(auto const& scc: sccs) {
+        cout << "<";
+        char isFirst = true;
+        for(auto const& arg: scc) {
+            if (isFirst) {
+                isFirst = false;
+                cout << af.int_to_arg[arg];
+            } else {
+				cout << "," << af.int_to_arg[arg];
+			}
+        }
+        cout << ">\n";
+    }
 }

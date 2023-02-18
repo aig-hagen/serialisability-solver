@@ -339,6 +339,7 @@ int main(int argc, char ** argv)
 			switch (string_to_sem(task)) {
 				case GR:
 					Problems::se_grounded(af);
+					break;
 				case IT:
 					Problems::se_initial(af);
 					break;
