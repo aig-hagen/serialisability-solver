@@ -13,6 +13,20 @@ void add_nonempty(const AF & af, ExternalSatSolver & solver) {
 	solver.addClause(clause);
 }
 
+void add_nonempty_subset_of(const AF & af, vector<uint32_t> args, ExternalSatSolver & solver) {
+	vector<int> non_empty_clause;
+	for(auto const& arg: args) {
+		non_empty_clause.push_back(af.accepted_var[arg]);
+	}
+	solver.addClause(non_empty_clause);
+	for (uint32_t i = 0; i < af.args; i++) {
+		if (std::find(args.begin(), args.end(), i) == args.end()) {
+			vector<int> unit_clause = { -af.accepted_var[i] };
+        	solver.addClause(unit_clause);
+		}
+	}
+}
+
 /*!
  * The following is largely taken from the mu-toksia solver
  * and is subject to the following licence.

@@ -12,6 +12,14 @@ struct params {
 	std::vector<std::string> base_ext;
 };
 
+struct params2 {
+	const AF af;
+	const std::string & arg;
+	std::vector<std::pair<std::string,std::string>> & atts;
+	std::vector<std::string> base_ext;
+	std::vector<uint32_t> scc;
+};
+
 void print_extension(const AF & af, const std::vector<uint32_t> & extension);
 void print_extension_ee(const AF & af, const std::vector<uint32_t> & extension);
 void print_extension_ee(const std::vector<std::string> & extension);
