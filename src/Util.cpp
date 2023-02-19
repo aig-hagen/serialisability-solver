@@ -88,8 +88,10 @@ AF getReduct(const AF & af, vector<string> ext, vector<pair<string,string>> & at
 	return reduct;
 }
 
-// computes the set of strongly connected components using Tarjan's algorithm
-// (internal recursive sub function)
+/*
+ * The following functions for working with SCCs have been adapted from the fudge argumentation-solver
+ * which is subject to the GPL3 licence. 
+*/
 int __scc__compute_strongly_connected_components(int idx, uint32_t v, stack<uint32_t>* arg_stack, vector<vector<uint32_t>>* sccs, const AF & af, int index[], int lowlink[], bool stack_member[]) {
     index[v] = idx;
 	lowlink[v] = idx;
