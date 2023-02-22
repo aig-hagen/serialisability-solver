@@ -32,7 +32,7 @@ bool ds_unchallenged_r(params p);
 
 // EE-UC
 bool ee_unchallenged(const AF & af, std::vector<std::pair<std::string,std::string>> & atts);
-bool ee_unchallenged_r(const AF & original_af, const AF & af, std::vector<std::pair<std::string,std::string>> & atts, std::vector<std::string> base_ext);
+std::set<std::set<std::string>> ee_unchallenged_r(const AF & original_af, const AF & af, std::vector<std::pair<std::string,std::string>> & atts, std::set<std::string> base_ext);
 
 
 // PREFERRED

@@ -37,6 +37,17 @@ void print_extension_ee(const std::vector<string> & extension)
 	std::cout << "]";
 }
 
+void print_extension_ee(const std::set<string> & extension) {
+	std::cout << "[";
+	int ct = 0;
+	for (auto const& arg: extension) {
+		std::cout << arg;
+		if (ct != extension.size()-1) cout << ",";
+		ct++;
+	}
+	std::cout << "]";
+}
+
 AF getReduct(const AF & af, vector<string> ext, vector<pair<string,string>> & atts) {
 	AF reduct = AF();
 

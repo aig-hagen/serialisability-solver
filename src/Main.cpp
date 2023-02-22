@@ -360,7 +360,6 @@ int main(int argc, char ** argv)
 					Problems::ee_initial(af);
 					break;
 				case UC:
-					cout << "GOING IN\n";
 					Problems::ee_unchallenged(af, atts);
 					break;
 				default:

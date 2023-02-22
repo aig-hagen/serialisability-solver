@@ -12,63 +12,56 @@ set<vector<string>> get_ua_or_uc_initial(const AF & af) {
     if (!af.args) {
         return extensions;
     }
-    
-    vector<string> extension;
-    vector<vector<int>> clauses;
-    vector<int> complement_clause;
-    complement_clause.reserve(af.args);
-	while (true) {
-        // Compute one extension by finding a minimal solution to the KB
-        // TODO: This should be outside of the loop and a copy should be used each loop
+
+    vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
+    for (auto const& scc: sccs) {
+        vector<string> extension;
+        vector<int> complement_clause;
+        complement_clause.reserve(af.args);
         ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
         Encodings::add_admissible(af, solver);
-        Encodings::add_nonempty(af, solver);
-        if (!clauses.empty())
-        {
-            for (size_t i = 0; i < clauses.size(); i++)
-            {
-                solver.addClause(clauses[i]);
-            }
-        }
-        
+        Encodings::add_nonempty_subset_of(af, scc, solver);
+
         bool foundExt = false;
         while (true) {
-            bool sat = solver.solve();
-            if (!sat) break;
+            int sat = solver.solve();          
+            if (sat==20) break;
+            
             foundExt = true;
             extension.clear();
             for (uint32_t i = 0; i < af.args; i++) {
-                if (solver.model[af.accepted_var[i]-1]) {
+                if (solver.model[af.accepted_var[i]]) {
                     extension.push_back(af.int_to_arg[i]);
                 }
             }
+
             vector<int> min_complement_clause;
             min_complement_clause.reserve(af.args);
             for (uint32_t i = 0; i < af.args; i++) {
-                if (solver.model[af.accepted_var[i]-1]) {
+                if (solver.model[af.accepted_var[i]]) {
                     min_complement_clause.push_back(-af.accepted_var[i]);
                 } else {
                     vector<int> unit_clause = { -af.accepted_var[i] };
-                    solver.addClause(unit_clause);
+                    solver.addMinimizationClause(unit_clause);
                 }
             }
-            solver.addClause(min_complement_clause);
+            solver.addMinimizationClause(min_complement_clause);
         }
         if (foundExt) {
             extensions.insert(extension);
         } else {
-            break;
+            continue;
         }
 
         complement_clause.clear();
         for (uint32_t i = 0; i < af.args; i++) {
-            if (solver.model[af.accepted_var[i]-1]) {
+            if (solver.model[af.accepted_var[i]]) {
                 complement_clause.push_back(-af.accepted_var[i]);
             } else {
                 //complement_clause.push_back(-af.rejected_var[i]);
             }
         }
-        clauses.push_back(complement_clause);
+        solver.addClause(complement_clause);
 	}
 
     // filter out the challenged initial sets

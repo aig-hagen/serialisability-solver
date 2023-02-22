@@ -50,7 +50,7 @@ int ExternalSatSolver::solve() {
     redi::pstream process(solver_path);
     process << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     //std::cout << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
-    for(const std::vector<int> clause: clauses) {
+    for(auto const& clause: clauses) {
         for(const int lit: clause){
             process << lit << " ";
             //std::cout << lit << " ";
@@ -58,7 +58,7 @@ int ExternalSatSolver::solve() {
         process << "\n";
         //std::cout << "\n";
     }
-    for(const std::vector<int> clause: minimization_clauses) {
+    for(auto const& clause: minimization_clauses) {
         for(const int lit: clause){
             process << lit << " ";
             //std::cout << lit << " ";
