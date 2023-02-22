@@ -13,55 +13,57 @@ set<vector<string>> get_ua_or_uc_initial(const AF & af) {
         return extensions;
     }
 
+    vector<string> extension;
+    vector<int> complement_clause;
+    complement_clause.reserve(af.args);
     vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
     for (auto const& scc: sccs) {
-        vector<string> extension;
-        vector<int> complement_clause;
-        complement_clause.reserve(af.args);
         ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
         Encodings::add_admissible(af, solver);
         Encodings::add_nonempty_subset_of(af, scc, solver);
 
-        bool foundExt = false;
         while (true) {
-            int sat = solver.solve();          
-            if (sat==20) break;
-            
-            foundExt = true;
-            extension.clear();
-            for (uint32_t i = 0; i < af.args; i++) {
-                if (solver.model[af.accepted_var[i]]) {
-                    extension.push_back(af.int_to_arg[i]);
+            bool foundExt = false;
+            while (true) {
+                int sat = solver.solve();          
+                if (sat==20) break;
+                
+                foundExt = true;
+                extension.clear();
+                for (uint32_t i = 0; i < af.args; i++) {
+                    if (solver.model[af.accepted_var[i]]) {
+                        extension.push_back(af.int_to_arg[i]);
+                    }
                 }
-            }
 
-            vector<int> min_complement_clause;
-            min_complement_clause.reserve(af.args);
-            for (uint32_t i = 0; i < af.args; i++) {
-                if (solver.model[af.accepted_var[i]]) {
-                    min_complement_clause.push_back(-af.accepted_var[i]);
-                } else {
-                    vector<int> unit_clause = { -af.accepted_var[i] };
-                    solver.addMinimizationClause(unit_clause);
+                vector<int> min_complement_clause;
+                min_complement_clause.reserve(af.args);
+                for (uint32_t i = 0; i < af.args; i++) {
+                    if (solver.model[af.accepted_var[i]]) {
+                        min_complement_clause.push_back(-af.accepted_var[i]);
+                    } else {
+                        vector<int> unit_clause = { -af.accepted_var[i] };
+                        solver.addMinimizationClause(unit_clause);
+                    }
                 }
+                solver.addMinimizationClause(min_complement_clause);
             }
-            solver.addMinimizationClause(min_complement_clause);
-        }
-        if (foundExt) {
-            extensions.insert(extension);
-        } else {
-            continue;
-        }
-
-        complement_clause.clear();
-        for (uint32_t i = 0; i < af.args; i++) {
-            if (solver.model[af.accepted_var[i]]) {
-                complement_clause.push_back(-af.accepted_var[i]);
+            if (foundExt) {
+                extensions.insert(extension);
             } else {
-                //complement_clause.push_back(-af.rejected_var[i]);
+                break;
             }
+
+            complement_clause.clear();
+            for (uint32_t i = 0; i < af.args; i++) {
+                if (solver.model[af.accepted_var[i]]) {
+                    complement_clause.push_back(-af.accepted_var[i]);
+                } else {
+                    //complement_clause.push_back(-af.rejected_var[i]);
+                }
+            }
+            solver.addClause(complement_clause);
         }
-        solver.addClause(complement_clause);
 	}
 
     // filter out the challenged initial sets
@@ -126,6 +128,70 @@ bool initial(const AF & af) {
 */
 
 bool ee_initial(const AF & af) {
+    std::cout << "[";
+
+    int count = 0;
+    vector<uint32_t> extension;
+    vector<int> complement_clause;
+    complement_clause.reserve(af.args);
+    
+    if (!af.args) {
+        std::cout << "]\n";
+        return true;
+    }
+
+    vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
+    for (auto const& scc: sccs) {
+        ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
+        Encodings::add_admissible(af, solver);
+        Encodings::add_nonempty_subset_of(af, scc, solver);
+
+        while (true) {
+            bool foundExt = false;
+            while (true) {
+                int sat = solver.solve();          
+                if (sat==20) break;
+                
+                foundExt = true;
+                extension.clear();
+                for (uint32_t i = 0; i < af.args; i++) {
+                    if (solver.model[af.accepted_var[i]]) {
+                        extension.push_back(i);
+                    }
+                }
+
+                vector<int> min_complement_clause;
+                min_complement_clause.reserve(af.args);
+                for (uint32_t i = 0; i < af.args; i++) {
+                    if (solver.model[af.accepted_var[i]]) {
+                        min_complement_clause.push_back(-af.accepted_var[i]);
+                    } else {
+                        vector<int> unit_clause = { -af.accepted_var[i] };
+                        solver.addMinimizationClause(unit_clause);
+                    }
+                }
+                solver.addMinimizationClause(min_complement_clause);
+            }
+            if (foundExt) {
+                if (!count++ == 0) {
+                    std::cout << ", ";
+                }
+                print_extension_ee(af, extension);
+            } else {
+                break;
+            }
+
+            complement_clause.clear();
+            for (uint32_t i = 0; i < af.args; i++) {
+                if (solver.model[af.accepted_var[i]]) {
+                    complement_clause.push_back(-af.accepted_var[i]);
+                } else {
+                    //complement_clause.push_back(-af.rejected_var[i]);
+                }
+            }
+            solver.addClause(complement_clause);       
+        }
+	}
     std::cout << "[";
     vector<uint32_t> extension;
     vector<int> complement_clause;
