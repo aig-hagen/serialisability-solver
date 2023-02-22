@@ -103,4 +103,17 @@ void add_admissible(const AF & af, ExternalSatSolver & solver) {
 	}
 }
 
+void add_complete(const AF & af, ExternalSatSolver & solver)
+{
+	add_admissible(af, solver);
+	for (uint32_t i = 0; i < af.args; i++) {
+		vector<int> clause(af.attackers[i].size()+1);
+		for (uint32_t j = 0; j < af.attackers[i].size(); j++) {
+			clause[j] = -af.rejected_var[af.attackers[i][j]];
+		}
+		clause[af.attackers[i].size()] = af.accepted_var[i];
+		solver.addClause(clause);
+	}
+}
+
 }

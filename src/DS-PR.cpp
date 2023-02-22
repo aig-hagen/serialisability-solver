@@ -3,6 +3,7 @@
 #include <thread>
 #include <iostream>
 #include <fstream>
+#include <stack>
 
 using namespace std;
 
@@ -12,6 +13,50 @@ std::atomic<int> thread_counter(0);
 std::atomic<int> num_active_threads(0);
 
 namespace Problems {
+
+/*mutoksia version of ds-pr*/
+bool mt_ds_preferred(const AF & af, string const & arg)
+{
+	ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
+	Encodings::add_complete(af, solver);
+
+	vector<int> assumptions = { -af.accepted_var[af.arg_to_int.at(arg)] };
+
+	while (true) {
+		bool sat = solver.solve(assumptions);
+		if (!sat) break;
+
+		vector<int> complement_clause;
+		complement_clause.reserve(af.args);
+		vector<uint8_t> visited(af.args);
+		vector<int> new_assumptions = assumptions;
+		new_assumptions.reserve(af.args);
+
+		while (true) {
+			complement_clause.clear();
+			for (uint32_t i = 0; i < af.args; i++) {
+				if (solver.model[af.accepted_var[i]]) {
+					if (!visited[i]) {
+						new_assumptions.push_back(af.accepted_var[i]);
+						visited[i] = 1;
+					}
+				} else {
+					complement_clause.push_back(af.accepted_var[i]);
+				}
+			}
+			solver.addClause(complement_clause);
+			bool superset_exists = solver.solve(new_assumptions);
+			if (!superset_exists) break;
+		}
+
+		new_assumptions[0] = -new_assumptions[0];
+
+		if (!solver.solve(new_assumptions)) {
+			return false;
+		}
+	}
+	return true;
+}
 
 bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
 	preferred_ce_found = false;
@@ -79,20 +124,57 @@ bool ds_preferred_r(params p) {
 	If 'arg' is rejected by the grounded extension, we found an admissible extension, i.e., ext + grounded that does not contain 'arg'
 	If neither is the case, we move to the reduct wrt to the grounded extension to simplify
 	*/
-	// TODO can be optimized slightly, can save some loops by inlining reduct computation and acceptance/rejection checks for 'arg'
-	vector<string> grounded_ext = se_grounded(p.af);
-	for(auto const& arg: grounded_ext) {
-		if (arg == p.arg) {
-			//outfile.open("out.out", std::ios_base::app);
-			//outfile << thread_id << ": " << "ARG GROUNDED --> TERM\n";
-			//outfile.close();
-			num_active_threads--;
-			return true;
+	vector<uint32_t> num_attackers;
+	num_attackers.resize(p.af.args, 0);
+	vector<string> grounded;
+	vector<bool> grounded_out;
+	grounded_out.resize(p.af.args, false);
+	stack<uint32_t> arg_stack;
+	for (size_t i = 0; i < p.af.args; i++) {
+		if (p.af.unattacked[i]) {
+			grounded.push_back(p.af.int_to_arg[i]);
+			arg_stack.push(i);
+		}
+		num_attackers[i] = p.af.attackers[i].size();
+	}
+	while (arg_stack.size() > 0) {
+		uint32_t arg = arg_stack.top();
+		arg_stack.pop();
+		for (auto const& arg1: p.af.attacked[arg]) {
+			if (grounded_out[arg1]) {
+				continue;
+			}
+			if (p.af.int_to_arg[arg1] == p.arg) {
+				//outfile.open("out.out", std::ios_base::app);
+				//outfile << thread_id << ": " << "GROUNDED REJECTS ARG --> TERM NO \n";
+				//outfile.close();
+				num_active_threads--;
+				preferred_ce_found = true;
+				return false;
+			}
+			
+			grounded_out[arg1] = true;
+			for (auto const& arg2: p.af.attacked[arg1]) {
+				if (num_attackers[arg2] > 0) {
+					num_attackers[arg2]--;
+					if (num_attackers[arg2] == 0) {
+						if (p.af.int_to_arg[arg2] == p.arg) {
+							//outfile.open("out.out", std::ios_base::app);
+							//outfile << thread_id << ": " << "ARG GROUNDED --> TERM\n";
+							//outfile.close();
+							num_active_threads--;
+							return true;
+						}
+						grounded.push_back(p.af.int_to_arg[arg2]);
+						arg_stack.push(arg2);
+					}
+				}
+			}
 		}
 	}
 	AF af = p.af;
-	if (!grounded_ext.empty()) {
-		af = getReduct(p.af, grounded_ext, p.atts);
+	if (!grounded.empty()) {
+		af = getReduct(p.af, grounded, p.atts);
 		//outfile.open("out.out", std::ios_base::app);
 		//outfile << thread_id << ": " << "REMOVED GROUNDED EXT: ";
 		//for(auto const& arg: grounded_ext) {
@@ -100,14 +182,6 @@ bool ds_preferred_r(params p) {
 		//}
 		//outfile << "\n";
 		//outfile.close();
-	}
-	if (af.arg_to_int.find(p.arg) == af.arg_to_int.end()) {
-		//outfile.open("out.out", std::ios_base::app);
-		//outfile << thread_id << ": " << "GROUNDED REJECTS ARG --> TERM NO \n";
-		//outfile.close();
-		num_active_threads--;
-		preferred_ce_found = true;
-		return false;
 	}
 	//====================================================================================================================================
 
@@ -141,6 +215,13 @@ bool ds_preferred_r(params p) {
 	}
 
 	for (size_t i = 0; i < sccs.size(); i++) {
+		// TODO sound?
+		// If SCC consists of only one argument, it won't have any initial set.
+		// If a SCC of size one has an initial set, it would be an unattacked initial set, 
+		// which cannot be since we accepted all unattacked initial sets via the grounded extension already.
+		if (sccs[i].size() == 1) {
+			continue;
+		}
 		if (i==arg_scc) continue;
 		// check termination flag (some other thread found a counterexample)
 		if (preferred_ce_found) {
