@@ -64,7 +64,9 @@ set<vector<string>> get_ua_or_uc_initial(const AF & af) {
             }
             solver.addClause(complement_clause);
         }
+        solver.free();
 	}
+
 
     // filter out the challenged initial sets
     // TODO can maybe be optimized
@@ -192,66 +194,7 @@ bool ee_initial(const AF & af) {
             solver.addClause(complement_clause);       
         }
 	}
-    std::cout << "[";
-    vector<uint32_t> extension;
-    vector<int> complement_clause;
-    int count = 0;
-    complement_clause.reserve(af.args);
-    ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
-    Encodings::add_admissible(af, solver);
-    Encodings::add_nonempty(af, solver);
-	while (true) {
-        // Compute one extension by finding a minimal solution to the KB
-        bool foundExt = false;
-        while (true) {
-            int sat = solver.solve();
-            if (sat==20) break;
-            // If we reach this once, an extension has been found
-            //cout << "======" << sat << "=======";
-            foundExt = true;
-            extension.clear();
-            for (uint32_t i = 0; i < af.args; i++) {
-                if (solver.model[af.accepted_var[i]]) {
-                    extension.push_back(i);
-                }
-            }
-            
-            vector<int> min_complement_clause;
-            min_complement_clause.reserve(af.args);
-            for (uint32_t i = 0; i < af.args; i++) {
-                if (solver.model[af.accepted_var[i]]) {
-                    // create a clause with all negated variables for the accepted arguments, makes sure the next found model (if it exists) is a subset of the current model
-                    min_complement_clause.push_back(-af.accepted_var[i]);
-                } else {
-                    // for all non-accepted arguments, at their negated acceptance variable to the solver, makes sure no non-accepted argument is accepted in the next found model
-                    vector<int> unit_clause = { -af.accepted_var[i] };
-                    solver.addMinimizationClause(unit_clause);
-                }
-            }
-            solver.addMinimizationClause(min_complement_clause);
-        }
-        if (foundExt) {
-            if (!count++ == 0) {
-                std::cout << ", ";
-            }
-            print_extension_ee(af, extension);
-        } else {
-            std::cout << "]\n";
-            break;
-        }
-
-        // create a complement clause, so that the solver doesnt find the same model again
-        // TODO can maybe be even more specific
-        complement_clause.clear();
-        for (uint32_t i = 0; i < af.args; i++) {
-            if (solver.model[af.accepted_var[i]]) {
-                complement_clause.push_back(-af.accepted_var[i]);
-            } else {
-                //complement_clause.push_back(-af.rejected_var[i]);
-            }
-        }
-        solver.addClause(complement_clause);
-	}
+    std::cout << "]\n";
 	return true;
 }
 

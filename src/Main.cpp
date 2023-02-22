@@ -324,7 +324,7 @@ int main(int argc, char ** argv)
 			bool skept_accepted = false;
 			switch (string_to_sem(task)) {
 				case PR:
-					//skept_accepted = SkeptAcceptance::preferred(af, query);
+					//skept_accepted = Problems::mt_ds_preferred(af, query);
 					skept_accepted = Problems::ds_preferred(af, query, atts);
 					break;
 				case UC:
@@ -360,6 +360,7 @@ int main(int argc, char ** argv)
 					Problems::ee_initial(af);
 					break;
 				case UC:
+					//EnumExtensions::unchallenged_naive(af, atts);
 					Problems::ee_unchallenged(af, atts);
 					break;
 				default:
