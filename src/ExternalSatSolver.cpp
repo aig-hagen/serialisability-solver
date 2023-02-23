@@ -47,7 +47,7 @@ void ExternalSatSolver::addMinimizationClause(std::vector<int> & clause) {
 
 int ExternalSatSolver::solve() {
     //redi::pstream proc(solver_path, redi::pstreams::pstdout | redi::pstreams::pstdin | redi::pstreams::pstderr);
-    redi::pstream process(solver_path);
+    redi::pstream process(solver_path + " --polar false");
     process << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     //std::cout << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     for(auto const& clause: clauses) {
