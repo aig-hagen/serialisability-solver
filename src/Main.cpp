@@ -339,10 +339,12 @@ int main(int argc, char ** argv)
 		}
 		case SE:
 		{
-			vector<int> extension;
+			vector<string> extension;
 			switch (string_to_sem(task)) {
 				case GR:
-					Problems::se_grounded(af);
+					extension = Problems::se_grounded(af);
+					print_extension_ee(extension);
+					cout << "\n";
 					break;
 				case IT:
 					Problems::se_initial(af);

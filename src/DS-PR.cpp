@@ -1,6 +1,7 @@
 #include "Problems.h"
 #include <atomic>
 #include <thread>
+#include <mutex>
 #include <iostream>
 #include <fstream>
 #include <stack>
@@ -8,9 +9,11 @@
 using namespace std;
 
 // Variables for IPC
-std::atomic<bool> preferred_ce_found{false};
-std::atomic<int> thread_counter(0);
-std::atomic<int> num_active_threads(0);
+atomic<bool> preferred_ce_found{false};
+atomic<int> thread_counter(0);
+atomic<int> num_active_threads(0);
+set<set<string>> checked_branches;
+mutex mtx;
 
 namespace Problems {
 
@@ -23,8 +26,8 @@ bool mt_ds_preferred(const AF & af, string const & arg)
 	vector<int> assumptions = { -af.accepted_var[af.arg_to_int.at(arg)] };
 
 	while (true) {
-		bool sat = solver.solve(assumptions);
-		if (!sat) break;
+		int sat = solver.solve(assumptions);
+		if (sat == 20) break;
 
 		vector<int> complement_clause;
 		complement_clause.reserve(af.args);
@@ -45,13 +48,13 @@ bool mt_ds_preferred(const AF & af, string const & arg)
 				}
 			}
 			solver.addClause(complement_clause);
-			bool superset_exists = solver.solve(new_assumptions);
-			if (!superset_exists) break;
+			int superset_exists = solver.solve(new_assumptions);
+			if (superset_exists == 20) break;
 		}
 
 		new_assumptions[0] = -new_assumptions[0];
 
-		if (!solver.solve(new_assumptions)) {
+		if (solver.solve(new_assumptions) == 20) {
 			return false;
 		}
 	}
@@ -358,29 +361,48 @@ bool ds_preferred_r_scc(params2 p) {
 				//outfile.close();
 				// Extension would contain arg, no thread needs to be created and continue with the next initial set
 			} else {
-				// If arg gets rejected by the initial set, we found a counterexample 
-				const AF reduct = getReduct(p.af, extension, p.atts);
-
-				// If the argument is not present in the reduct a counterexample has been found
-				if (reduct.arg_to_int.find(p.arg) == reduct.arg_to_int.end()) {
-					//outfile.open("out.out", std::ios_base::app);
-					//outfile << thread_id << ": " << "MODEL REJECTS ARG --> TERM NO \n";
-					//outfile.close();
-					num_active_threads--;
-					preferred_ce_found = true;
-					return false;
-				}
 				//TODO trim atts after each reduct?
 				vector<string> new_ext;
-				new_ext.insert(new_ext.end(), p.base_ext.begin(), p.base_ext.end());
-				new_ext.insert(new_ext.end(), extension.begin(), extension.end());
+				set<string> branch;
+				
+				for(auto const& arg: p.base_ext) {
+					new_ext.push_back(arg);
+					branch.insert(arg);
+				}
+				for(auto const& arg: extension) {
+					new_ext.push_back(arg);
+					branch.insert(arg);
+				}
 
-				//outfile.open("out.out", std::ios_base::app);
-				//outfile << thread_id << ": " << "DETACHING NEW THREAD\n";
-				//outfile.close();
-				params new_p =  {reduct, p.arg, p.atts, new_ext};
-				std::thread t(ds_preferred_r, new_p);
-				t.detach();
+				unique_lock<mutex> lock(mtx);
+				if (checked_branches.find(branch) != checked_branches.end()) {
+					//outfile.open("out.out", std::ios_base::app);
+					//outfile << thread_id << ": " << "BRANCH ALREADY CHECKED --> SKIP \n";
+					//outfile.close();
+				} else {
+					checked_branches.insert(branch);
+					// If there exists an attack from extension to arg, the model rejects arg thus we found a counterexample
+					for(auto const& arg: extension) {
+						if (p.af.att_exists.find(make_pair(p.af.arg_to_int.find(arg)->second, p.af.arg_to_int.find(p.arg)->second)) != p.af.att_exists.end()) {
+							//outfile.open("out.out", std::ios_base::app);
+							//outfile << thread_id << ": " << "MODEL REJECTS ARG --> TERM NO \n";
+							//outfile.close();
+							num_active_threads--;
+							preferred_ce_found = true;
+							return false;
+						}
+					}
+
+					const AF reduct = getReduct(p.af, extension, p.atts);
+
+					//outfile.open("out.out", std::ios_base::app);
+					//outfile << thread_id << ": " << "DETACHING NEW THREAD\n";
+					//outfile.close();
+					params new_p =  {reduct, p.arg, p.atts, new_ext};
+					std::thread t(ds_preferred_r, new_p);
+					t.detach();
+				}
+				lock.unlock();
 			}
         } else {
 			// no further initial set found, thread done
