@@ -193,6 +193,19 @@ void log(int thread_id, int output) {
 	mtx_log.unlock();
 }
 
+void log(int thread_id, std::string output, vector<int> clause) {
+	mtx_log.lock();
+	std::ofstream outfile;
+	outfile.open("out.log", std::ios_base::app);
+	outfile << thread_id << ": " << output << ": ";
+	for(auto const& arg: clause) {
+		outfile << arg << ",";
+	}
+	outfile << "\n";
+	outfile.close();
+	mtx_log.unlock();
+}
+
 void log(int thread_id, std::string output, vector<string> ext) {
 	mtx_log.lock();
 	std::ofstream outfile;

@@ -73,13 +73,8 @@ bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>>
 	params p = {af, arg, atts, ext};
     //ds_preferred_r(p);
 	boost::asio::post(pool, [p] {ds_preferred_r(p);});
-	
-	// wait until all threads are done
-	//while (num_active_threads > 0) {
-	//}
-
+		
 	pool.join();
-	//std::cout << thread_counter << "\n";
     return !preferred_ce_found;
 }
 
@@ -282,7 +277,7 @@ bool ds_preferred_r_scc(params2 p) {
         bool foundExt = false;
         while (true) {
 			log(thread_id, "LOOKING FOR NEW MODEL");
-            int sat = solver.solve();
+            int sat = solver.solve(thread_id);
 			log(thread_id, "SOLVER RESPONDED");
 
 			// check termination flag (some other thread found a counterexample)

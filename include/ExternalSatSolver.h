@@ -20,10 +20,11 @@ public:
     void assume(int lit);
     void addClause(std::vector<int> & clause);
     void addMinimizationClause(std::vector<int> & clause);
+    int solve(int thread_id);
     int solve();
     int solve(std::vector<int> assumptions);
     void free();
-
+    
 };
 
 #endif
