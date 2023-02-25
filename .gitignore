@@ -35,3 +35,5 @@ instances/
 test.dimacs
 
 lib/cryptominisat-5.11.4/build/
+check_log.py
+clauses.dimacs
