@@ -12,6 +12,7 @@ COPTIMIZE = -O3
 LFLAGS    = -Wall
 IFLAGS    = -I include
 
+#LDFLAGS = -lboost_thread-mt
 LDFLAGS = -lpthread
 
 CFLAGS   += $(COPTIMIZE)

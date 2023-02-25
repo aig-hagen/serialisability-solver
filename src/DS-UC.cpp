@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <iostream>
 #include <atomic>
-#include <thread>
 
 using namespace std;
 
@@ -55,10 +54,11 @@ bool ds_unchallenged_r(params p) {
         new_ext.insert(new_ext.end(), ext.begin(), ext.end());
 
 		params new_p =  {reduct, p.arg, p.atts, new_ext};
-		std::thread t(ds_unchallenged_r, new_p);
-		t.detach();
-        //unchallenged(original_af, reduct, arg, atts, new_ext);
+		//std::thread t(ds_unchallenged_r, new_p);
+		//t.detach();
+        ds_unchallenged_r(new_p);
     }
     return true;
 }
+
 }
