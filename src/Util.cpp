@@ -4,6 +4,8 @@
 #include <unordered_set>
 #include <stack>
 #include <algorithm>
+#include <fstream>
+#include <mutex>
 
 using namespace std;
 
@@ -49,11 +51,10 @@ void print_extension_ee(const std::set<string> & extension) {
 }
 
 AF getReduct(const AF & af, vector<string> ext, vector<pair<string,string>> & atts) {
-	AF reduct = AF();
-
 	if (ext.empty()) {
 		return af;
 	}
+	AF reduct = AF();
 
 	std::unordered_set<uint32_t> removed_args;
 	for (const auto& arg: ext) {
@@ -170,4 +171,50 @@ void print_sccs(const AF & af, vector<vector<uint32_t>> sccs) {
         }
         cout << ">\n";
     }
+}
+
+mutex mtx_log;
+
+void log(int thread_id, string output) {
+	mtx_log.lock();
+	std::ofstream outfile;
+	outfile.open("out.log", std::ios_base::app);
+	outfile << thread_id << ": " << output <<"\n";
+	outfile.close();
+	mtx_log.unlock();
+}
+
+void log(int thread_id, int output) {
+	mtx_log.lock();
+	std::ofstream outfile;
+	outfile.open("out.log", std::ios_base::app);
+	outfile << thread_id << ": " << output <<"\n";
+	outfile.close();
+	mtx_log.unlock();
+}
+
+void log(int thread_id, std::string output, vector<string> ext) {
+	mtx_log.lock();
+	std::ofstream outfile;
+	outfile.open("out.log", std::ios_base::app);
+	outfile << thread_id << ": " << output << ": ";
+	for(auto const& arg: ext) {
+		outfile << arg << ",";
+	}
+	outfile << "\n";
+	outfile.close();
+	mtx_log.unlock();
+}
+
+void log(int thread_id, std::string output, vector<uint32_t> ext, const AF & af) {
+	mtx_log.lock();
+	std::ofstream outfile;
+	outfile.open("out.log", std::ios_base::app);
+	outfile << thread_id << ": " << output << ": ";
+	for(auto const& arg: ext) {
+		outfile << af.int_to_arg[arg] << ",";
+	}
+	outfile << "\n";
+	outfile.close();
+	mtx_log.unlock();
 }
