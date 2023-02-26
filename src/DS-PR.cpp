@@ -37,7 +37,14 @@ bool mt_ds_preferred(const AF & af, string const & arg) {
 	vector<int> assumptions = { -af.accepted_var[af.arg_to_int.at(arg)] };
 
 	while (true) {
+		//log(0, "LOOKING FOR MODEL");
 		int sat = solver.solve(assumptions);
+		//log(0, "SOLVER RESPONDED");
+		//log(0, sat);
+		for (size_t i = 0; i < solver.model.size(); i++) {
+			cout << i << ": " << solver.model[i] << "\n";
+		}
+		
 		if (sat == 20) break;
 
 		vector<int> complement_clause;
@@ -76,7 +83,6 @@ bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>>
 	//log(-1, arg);
 	preferred_ce_found = false;
     vector<string> ext;
-    //ds_preferred_r(p);
 	boost::asio::post(pool, [af, arg, &atts, ext] {ds_preferred_r(af, arg, atts, ext);});
 		
 	pool.join();
@@ -87,7 +93,7 @@ bool ds_preferred_r(const AF & af, string const & arg, vector<pair<string,string
 	int thread_id = thread_counter++;
 	num_active_threads++;
 	//log(thread_id, "STARTING THREAD FOR IS");
-	//log(thread_id, "CURRENT", p.base_ext);
+	//log(thread_id, "CURRENT", base_ext);
 
 	// check termination flag (some other thread found a counterexample)
 	if (preferred_ce_found) {
@@ -255,6 +261,7 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
     Encodings::add_nonempty_subset_of(af, scc, solver);	
 
 	// iterate over the initial sets of the current AF
+	bool no_initial_set_exists = true;
 	while (true) {
 		// check termination flag (some other thread found a counterexample)
 		if (preferred_ce_found) {
@@ -280,6 +287,7 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
 
             if (sat == 20) break;
             foundExt = true;
+			no_initial_set_exists = false;
             extension.clear();
             for (uint32_t i = 0; i < af.args; i++) {
                 if (solver.model[af.accepted_var[i]]) {
@@ -337,26 +345,33 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
 					mtx.lock();
 					checked_branches.insert(branch);
 					mtx.unlock();
-				// If there exists an attack from extension to arg, the model rejects arg thus we found a counterexample
-				for(auto const& a: extension) {
-					if (af.att_exists.find(make_pair(af.arg_to_int.find(a)->second, af.arg_to_int.find(arg)->second)) != af.att_exists.end()) {
-						//log(thread_id, "MODEL REJECTS ARG --> TERM NO");
-						num_active_threads--;
-						preferred_ce_found = true;
-						return false;
+					// If there exists an attack from extension to arg, the model rejects arg thus we found a counterexample
+					for(auto const& a: extension) {
+						if (af.att_exists.find(make_pair(af.arg_to_int.find(a)->second, af.arg_to_int.find(arg)->second)) != af.att_exists.end()) {
+							//log(thread_id, "MODEL REJECTS ARG --> TERM NO");
+							num_active_threads--;
+							preferred_ce_found = true;
+							return false;
+						}
 					}
-				}
 
-				const AF reduct = getReduct(af, extension, atts);
+					const AF reduct = getReduct(af, extension, atts);
 
-				//log(thread_id, "DETACHING NEW TASK");
-				boost::asio::post(pool, [reduct, arg, &atts, new_ext] {ds_preferred_r(reduct, arg, atts, new_ext);});
+					//log(thread_id, "DETACHING NEW TASK");
+					boost::asio::post(pool, [reduct, arg, &atts, new_ext] {ds_preferred_r(reduct, arg, atts, new_ext);});
 				}
 			}
         } else {
-			//log(thread_id, "NO MORE INITIAL SETS --> TERM");
-			num_active_threads--;
-            return true;
+			if (no_initial_set_exists) {
+				//log(thread_id, "CURRENT EXT IS PREFERRED AND ARG NOT INCLUDED --> TERM NO");
+				preferred_ce_found = true;
+				num_active_threads--;
+            	return false;
+			} else {
+				//log(thread_id, "NO MORE INITIAL SETS --> TERM");
+				num_active_threads--;
+            	return true;
+			}
         }
 
 		// add complement clause to prevent the just found initial set
