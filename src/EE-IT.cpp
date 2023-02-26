@@ -1,6 +1,4 @@
 #include "Problems.h"
-#include "Encodings.h"
-#include <iostream>
 
 using namespace std;
 
@@ -18,7 +16,13 @@ set<vector<string>> get_ua_or_uc_initial(const AF & af) {
     complement_clause.reserve(af.args);
     vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
     for (auto const& scc: sccs) {
-        ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
+        #if defined(SAT_EXTERNAL)
+        SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
+        #elif defined(SAT_CMSAT)
+        SAT_Solver solver = SAT_Solver(af.count, af.args);
+        #else
+        #error "No SAT solver defined"
+        #endif
         Encodings::add_admissible(af, solver);
         Encodings::add_nonempty_subset_of(af, scc, solver);
 
@@ -107,28 +111,6 @@ set<vector<string>> get_ua_or_uc_initial(const AF & af) {
 	return result;
 }
 
-
-/*
-bool initial(const AF & af) {
-    ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
-    Encodings::add_admissible(af, solver);
-    Encodings::add_nonempty(af, solver);
-
-    int sat = solver.solve();
-    vector<uint32_t> extension;
-    for (uint32_t i = 0; i < af.args; i++) {
-        if (solver.model[af.accepted_var[i]]) {
-            extension.push_back(i);
-        }
-    }
-    print_extension(af, extension);
-
-    
-    std::cout << sat << " DONE\n";
-    return true;
-}
-*/
-
 bool ee_initial(const AF & af) {
     std::cout << "[";
 
@@ -144,7 +126,13 @@ bool ee_initial(const AF & af) {
 
     vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
     for (auto const& scc: sccs) {
-        ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
+        #if defined(SAT_EXTERNAL)
+        SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
+        #elif defined(SAT_CMSAT)
+        SAT_Solver solver = SAT_Solver(af.count, af.args);
+        #else
+        #error "No SAT solver defined"
+        #endif
         Encodings::add_admissible(af, solver);
         Encodings::add_nonempty_subset_of(af, scc, solver);
 

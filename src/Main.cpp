@@ -297,24 +297,6 @@ int main(int argc, char ** argv)
 	af.set_solver_path(sat_path);
 
 	switch (string_to_task(task)) {
-		case DC:
-		{
-			if (query.empty()) {
-				cerr << argv[0] << ": Query argument must be specified via -a flag\n";
-				return 1;
-			}
-			bool cred_accepted = false;
-			switch (string_to_sem(task)) {
-				case IT:
-					cred_accepted = Problems::dc_initial(af, query);
-					break;
-				default:
-					cerr << argv[0] << ": Problem not supported!\n";
-					return 1;
-			}
-			cout << (cred_accepted ? "YES" : "NO") << "\n";
-			break;
-		}
 		case DS:
 		{
 			if (query.empty()) {

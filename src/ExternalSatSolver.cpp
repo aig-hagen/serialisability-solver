@@ -1,6 +1,5 @@
 #include "ExternalSatSolver.h"
 #include <iostream>
-#include <Util.h>
 
 using namespace std;
 
@@ -46,11 +45,10 @@ void ExternalSatSolver::addMinimizationClause(std::vector<int> & clause) {
     minimization_clauses[num_minimization_clauses-1].push_back(0);
 }
 
-int ExternalSatSolver::solve(int thread_id) {
+int ExternalSatSolver::solve() {
     redi::pstream process(solver_path, redi::pstreams::pstdout | redi::pstreams::pstdin | redi::pstreams::pstderr);
     //TODO properly implement setting the --polar flag
     //redi::pstream process(solver_path + " --polar false");
-    //redi::pstream process(solver_path);
     process << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     //std::cout << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     for(auto const& clause: clauses) {
@@ -58,7 +56,6 @@ int ExternalSatSolver::solve(int thread_id) {
             process << lit << " ";
             //std::cout << lit << " ";
         }
-        log(thread_id, "CLAUSE", clause);
         process << "\n";
         //std::cout << "\n";
     }
@@ -78,7 +75,6 @@ int ExternalSatSolver::solve(int thread_id) {
             //std::cout << assumption << " 0\n";
         }
     }
-    log(thread_id, "CLAUSES SENT");
     
     //std::cout << "-----------------------------------------------" << std::endl;
     assumptions.clear();
@@ -89,15 +85,12 @@ int ExternalSatSolver::solve(int thread_id) {
     model.clear();
     //while (std::getline(process.out(),line)) {
     while (process.peek() != EOF && std::getline(process, line)) {
-        log(thread_id, line);
-        log(thread_id, "LOOP");
         //std::cout << line << std::endl;
         if (line.rfind("c ", 0) == 0) {
             continue;
         }
         if (line.rfind("s ", 0) == 0) {
             if (line.rfind("UNSATISFIABLE") != std::string::npos) {
-                log(thread_id, "UNSATISFIABLE");
                 return 20;
             }
         }
@@ -105,7 +98,6 @@ int ExternalSatSolver::solve(int thread_id) {
             line.erase(0, 2);
             size_t pos = 0;
             while(line.length() > 0) {
-                log(thread_id, "PARSING MODEL");
                 pos = line.find(" ");
                 if (pos == std::string::npos) {
                     pos = line.length();
@@ -122,19 +114,14 @@ int ExternalSatSolver::solve(int thread_id) {
             }
         }
     }
-    log(thread_id, "MODEL PARSED");
     return 10;
 }
 
-int ExternalSatSolver::solve(std::vector<int> assumptions) {
+int ExternalSatSolver::solve(const std::vector<int> assumptions) {
     for(auto const& assumption: assumptions) {
         assume(assumption);
     }
     return solve();
-}
-
-int ExternalSatSolver::solve() {
-    return solve(0);
 }
 
 void ExternalSatSolver::free() {

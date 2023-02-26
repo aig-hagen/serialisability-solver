@@ -1,13 +1,17 @@
-#include "Encodings.h"
 #include "Problems.h"
-#include <iostream>
 
 using namespace std;
 
 namespace Problems {
 
 bool se_initial(const AF & af) {
-	ExternalSatSolver solver = ExternalSatSolver(af.count, af.solver_path);
+	#if defined(SAT_EXTERNAL)
+	SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
+	#elif defined(SAT_CMSAT)
+	SAT_Solver solver = SAT_Solver(af.count, af.args);
+	#else
+	#error "No SAT solver defined"
+	#endif
 	Encodings::add_nonempty(af, solver);
 	Encodings::add_admissible(af, solver);
 

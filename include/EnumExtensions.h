@@ -2,9 +2,8 @@
 #define ENUM_EXTENSIONS_H
 
 #include "AF.h"
+
 #include <set>
-#include <string>
-#include <vector>
 
 namespace EnumExtensions {
 

@@ -1,5 +1,4 @@
 #include "Problems.h"
-#include "Encodings.h"
 #include <iostream>
 #include <fstream>
 
@@ -21,7 +20,7 @@ bool ee_unchallenged(const AF & af, vector<pair<string,string>> & atts) {
     return true;
 }
 
-set<set<string>> ee_unchallenged_r(const AF & original_af, const AF & af, vector<pair<string,string>> & atts, set<string> base_ext) {
+set<set<string>> ee_unchallenged_r(const AF & original_af, const AF & af, std::vector<std::pair<std::string,std::string>> & atts, set<string> base_ext) {
     set<vector<string>> ua_uc_initial_sets = get_ua_or_uc_initial(af);
     set<set<string>> exts;
 
