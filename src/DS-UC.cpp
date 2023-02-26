@@ -41,7 +41,8 @@ bool ds_unchallenged_r(const AF & af, std::string const & arg, std::vector<std::
 	}
 
     if (ua_uc_initial_sets.empty()) {
-        return true;
+		unchallenged_ce_found = true;
+        return false;
     }
     
     for (const auto& ext : ua_uc_initial_sets) {
