@@ -30,16 +30,16 @@
  * THE SOFTWARE.
  */
 
-#include "AF.h"
-#include "EnumExtensions.h"
-#include "Problems.h"
+#include "AF.h"				// Modelling of argumentation frameworks
+#include "EnumExtensions.h"	// Naive methods for EE-IT,EE-UC
+#include "Problems.h"		// Methods for all supported Problems
 
-#include <iostream>
-#include <fstream>
+#include <iostream>			//std::cout
+#include <fstream>			//ifstream
 #include <algorithm>
-#include <set>
 #include <stack>
-#include <getopt.h>
+
+#include <getopt.h>			// parsing commandline options
 
 using namespace std;
 
@@ -86,7 +86,7 @@ void print_usage(string solver_name)
 
 void print_version(string solver_name)
 {
-	cout << solver_name << " (version ICCMA'21)\n" << "Lars Bengel, University of Hagen <lars.bengel@fernuni-hagen.de>\n";
+	cout << solver_name << " (version 1.0)\n" << "Lars Bengel, University of Hagen <lars.bengel@fernuni-hagen.de>\n";
 }
 
 void print_formats()

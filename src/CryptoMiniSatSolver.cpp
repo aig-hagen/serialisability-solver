@@ -35,8 +35,7 @@
 using namespace std;
 using namespace CMSat;
 
-CryptoMiniSatSolver::CryptoMiniSatSolver(uint32_t number_of_vars, uint32_t number_of_arg_vars) {
-	n_args = number_of_arg_vars;
+CryptoMiniSatSolver::CryptoMiniSatSolver(uint32_t number_of_vars, std::string path_to_solver) {
 	n_vars = number_of_vars+1;
 	model = vector<bool>(n_vars+1);
 	clauses = std::vector<std::vector<Lit>>();

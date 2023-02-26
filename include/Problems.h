@@ -26,11 +26,9 @@ bool ce_initial(const AF & af); // counts the types of initial sets and their si
 
 // DS-UC
 bool ds_unchallenged(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts);
-bool ds_unchallenged_r(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts, std::vector<std::string> base_ext);
 
 // EE-UC
 bool ee_unchallenged(const AF & af, std::vector<std::pair<std::string,std::string>> & atts);
-std::set<std::set<std::string>> ee_unchallenged_r(const AF & original_af, const AF & af, std::vector<std::pair<std::string,std::string>> & atts, std::set<std::string> base_ext);
 
 
 // PREFERRED

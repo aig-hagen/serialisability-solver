@@ -20,8 +20,10 @@ LDFLAGS = -lpthread
 CFLAGS   += $(COPTIMIZE)
 CFLAGS   += -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
 CFLAGS   += -D CONE_OF_INFLUENCE
+#CFLAGS   += -D DEBUG_MODE
 
 SAT_SOLVER = cryptominisat
+#SAT_SOLVER = external
 CMSAT      = lib/cryptominisat-5.8.0
 
 ifeq ($(SAT_SOLVER), cryptominisat)
@@ -31,7 +33,7 @@ ifeq ($(SAT_SOLVER), cryptominisat)
 	OBJECTS += $(BUILDDIR)/CryptoMiniSatSolver.o
 	CMSAT_BUILD = $(CMSAT)/build
 else
-	$(error No SAT solver specified.)
+	$(@echo No SAT solver specified. Configured for external sat solver)
 endif
 
 $(TARGET): $(OBJECTS)

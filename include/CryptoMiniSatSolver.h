@@ -33,22 +33,24 @@
 #ifndef CMSAT_SOLVER_H
 #define CMSAT_SOLVER_H
 
-#include "SatSolver.h"
+#include <vector>
+#include <string>
+
 #include <cryptominisat5/cryptominisat.h>
 
 /*
 Class that models the Crpytominisat5 SAT solver
 SAT calls are answered by directly asking the API of cryptominisat
 */
-class CryptoMiniSatSolver : public SatSolver {
+class CryptoMiniSatSolver {
 
 public:
-	uint32_t n_args; // number of interesting vars
+	std::vector<bool> model;
 	uint32_t n_vars; // number of vars
 	std::vector<std::vector<CMSat::Lit>> clauses;
     std::vector<std::vector<CMSat::Lit>> minimization_clauses;
 
-	CryptoMiniSatSolver(uint32_t number_of_vars, uint32_t number_of_arg_vars);
+	CryptoMiniSatSolver(uint32_t number_of_vars, std::string path_to_solver);
 	~CryptoMiniSatSolver() {};
 	void addClause(const std::vector<int> & clause);
 	void addMinimizationClause(const std::vector<int> & clause);

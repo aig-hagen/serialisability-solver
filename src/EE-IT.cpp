@@ -16,13 +16,7 @@ set<vector<string>> get_ua_or_uc_initial(const AF & af) {
     complement_clause.reserve(af.args);
     vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
     for (auto const& scc: sccs) {
-        #if defined(SAT_EXTERNAL)
         SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
-        #elif defined(SAT_CMSAT)
-        SAT_Solver solver = SAT_Solver(af.count, af.args);
-        #else
-        #error "No SAT solver defined"
-        #endif
         Encodings::add_admissible(af, solver);
         Encodings::add_nonempty_subset_of(af, scc, solver);
 
@@ -126,13 +120,7 @@ bool ee_initial(const AF & af) {
 
     vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
     for (auto const& scc: sccs) {
-        #if defined(SAT_EXTERNAL)
         SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
-        #elif defined(SAT_CMSAT)
-        SAT_Solver solver = SAT_Solver(af.count, af.args);
-        #else
-        #error "No SAT solver defined"
-        #endif
         Encodings::add_admissible(af, solver);
         Encodings::add_nonempty_subset_of(af, scc, solver);
 

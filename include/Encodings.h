@@ -2,16 +2,13 @@
 #define ENCODINGS_H
 
 #include "AF.h"
-#include "SatSolver.h"
 
-#if defined(SAT_EXTERNAL)
-#include "ExternalSatSolver.h"
-typedef ExternalSatSolver SAT_Solver;
-#elif defined(SAT_CMSAT)
+#if defined(SAT_CMSAT)
 #include "CryptoMiniSatSolver.h"
 typedef CryptoMiniSatSolver SAT_Solver;
 #else
-#error "No SAT solver defined"
+#include "ExternalSatSolver.h"
+typedef ExternalSatSolver SAT_Solver;
 #endif
 
 namespace Encodings {

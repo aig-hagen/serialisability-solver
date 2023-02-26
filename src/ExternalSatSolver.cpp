@@ -1,5 +1,8 @@
 #include "ExternalSatSolver.h"
+
 #include <iostream>
+
+#include "pstream.h"
 
 using namespace std;
 
@@ -7,16 +10,16 @@ using namespace std;
  * The following is adapted from the fudge argumentation-solver
  * and is subject to the GPL3 licence.
 */
-ExternalSatSolver::ExternalSatSolver(int num_of_vars, string path) {
-    num_vars = num_of_vars;
-    num_clauses = 0;
-    num_minimization_clauses = 0;
-    solver_path = path;
-    
-    last_clause_closed = true;
+ExternalSatSolver::ExternalSatSolver(uint32_t number_of_vars, string path_to_solver) {
+    n_vars = number_of_vars;
+    model = std::vector<bool>(n_vars+1);
     clauses = std::vector<std::vector<int>>();
     minimization_clauses = std::vector<std::vector<int>>();
-    model = std::vector<bool>(num_vars+1);
+
+    last_clause_closed = true;
+    num_clauses = 0;
+    num_minimization_clauses = 0;
+    solver_path = path_to_solver;
 }
 
 void ExternalSatSolver::assume(int lit) {
@@ -49,7 +52,7 @@ int ExternalSatSolver::solve() {
     redi::pstream process(solver_path, redi::pstreams::pstdout | redi::pstreams::pstdin | redi::pstreams::pstderr);
     //TODO properly implement setting the --polar flag
     //redi::pstream process(solver_path + " --polar false");
-    process << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
+    process << "p cnf " << n_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     //std::cout << "p cnf " << num_vars << " " << (num_clauses+assumptions.size()+num_minimization_clauses) << "\n";
     for(auto const& clause: clauses) {
         for(const int lit: clause){

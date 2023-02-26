@@ -13,13 +13,7 @@ set<vector<uint32_t>> get_all_initial(const AF & af) {
     vector<int> complement_clause;
 
     complement_clause.reserve(af.args);
-    #if defined(SAT_EXTERNAL)
 	SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
-	#elif defined(SAT_CMSAT)
-	SAT_Solver solver = SAT_Solver(af.count, af.args);
-	#else
-	#error "No SAT solver defined"
-	#endif
     Encodings::add_admissible(af, solver);
     Encodings::add_nonempty(af, solver);
 	while (true) {

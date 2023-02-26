@@ -3,54 +3,33 @@
 #include <atomic>							// for tracking number of threads und status of counterexample search
 #include <mutex>							// for checking duplicate thread creating
 #include <stack>							// for computing the grounded extension
-#include <thread>							// thread::hardware_concurrency(); to get number of max threads
 #include <algorithm>						// std::find
+#include <thread>							// std::thread::hardware_concurrency()
 
 #include <boost/asio/thread_pool.hpp>		// handles threads
 #include <boost/asio/post.hpp>				// for submitting tasks to thread pool
-#include <boost/asio/io_context.hpp>		// for interrupting the thread pool once the search is done
 
 using namespace std;
 
+#if defined(DEBUG_MODE)
+atomic<int> thread_counter(0);
+#endif
+
 // Variables for Inter-Process Communication
 atomic<bool> preferred_ce_found{false};
-atomic<int> thread_counter(0);
 
 // Structure for preventing duplicate thread creation
 set<set<string>> checked_branches;
 mutex mtx;
 
 // Initialize Thread Pool with (#sys_threads - 1) number of threads
-auto num_max_threads = std::thread::hardware_concurrency()-1;
-boost::asio::thread_pool pool(num_max_threads);
-boost::asio::io_context io_context;
+int num_max_threads_dspr = std::thread::hardware_concurrency()-1;
+boost::asio::thread_pool pool(num_max_threads_dspr);
 
 namespace Problems {
 
 /*
-Main method for solving the DS-PR problem
-
-@param af	the argumentation framework
-@param arg	the argument to be decided
-@param atts	list of all attacks of the AF (only for faster reduct construction)
-
-@returns 'true' if arg is skeptically accepted wrt preferred semantics, 'false' otherwise
-*/
-bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
-	preferred_ce_found = false;
-
-	// Initialize search, starting with the empty set
-    vector<string> ext;
-	boost::asio::post(pool, [af, arg, &atts, ext] {ds_preferred_r(af, arg, atts, ext);});
-		
-	// Wait for all threads to finish and return result
-	// TODO Optimize pool destruction if counterexample has been found
-	pool.join();
-    return !preferred_ce_found;
-}
-
-/*
-helper function for the DS-PR problem that catches simple cases and then starts new threads for each SCC
+helper function (threaded) for the DS-PR problem that catches simple cases and then starts new threads for each SCC
 
 @param af		the argumentation framework
 @param arg		the argument to be decided
@@ -60,27 +39,34 @@ helper function for the DS-PR problem that catches simple cases and then starts 
 @returns 'false' if the current extension is a counterexample for the skeptical acceptance of arg, 'true' if arg is accepted by the constructed extension
 */
 bool ds_preferred_r(const AF & af, string const & arg, vector<pair<string,string>> & atts, vector<string> base_ext) {
+	#if defined(DEBUG_MODE)
 	int thread_id = thread_counter++;
-	//log(thread_id, "STARTING THREAD FOR IS");
-	//log(thread_id, "CURRENT", base_ext);
+	log(thread_id, "STARTING THREAD FOR IS");
+	log(thread_id, "CURRENT", base_ext);
+	#endif
 
 	// check termination flag (some other thread found a counterexample)
 	if (preferred_ce_found) {
-		//log(thread_id, "SIGNAL --> TERM");
+		#if defined(DEBUG_MODE)
+		log(thread_id, "SIGNAL --> TERM");
+		#endif
 		return true;
 	}
 	
 	// Checking if 'arg' is self-attacking and thus never acceptable
 	if (af.self_attack[af.arg_to_int.find(arg)->second]) {
-		//log(thread_id, "ARG SELF_ATTACKING --> TERM NO");
+		#if defined(DEBUG_MODE)
+		log(thread_id, "ARG SELF_ATTACKING --> TERM NO");
+		#endif
 		preferred_ce_found = true;
-		io_context.stop();
 		return false;
 	}
 
 	//Checking if 'arg' is an unattacked argument, as a shortcut for selecting all the unatttacked initial sets
 	if (af.unattacked[af.arg_to_int.find(arg)->second]) {
-		//log(thread_id, "ARG UNATTACKED --> TERM");
+		#if defined(DEBUG_MODE)
+		log(thread_id, "ARG UNATTACKED --> TERM");
+		#endif
 		return true;
 	}
 
@@ -115,9 +101,10 @@ bool ds_preferred_r(const AF & af, string const & arg, vector<pair<string,string
 				continue;
 			}
 			if (af.int_to_arg[arg1] == arg) {
-				//log(thread_id, "GROUNDED REJECTS ARG --> TERM NO");
+				#if defined(DEBUG_MODE)
+				log(thread_id, "GROUNDED REJECTS ARG --> TERM NO");
+				#endif
 				preferred_ce_found = true;
-				io_context.stop();
 				return false;
 			}
 			
@@ -127,7 +114,9 @@ bool ds_preferred_r(const AF & af, string const & arg, vector<pair<string,string
 					num_attackers[arg2]--;
 					if (num_attackers[arg2] == 0) {
 						if (af.int_to_arg[arg2] == arg) {
-							//log(thread_id, "ARG GROUNDED --> TERM");
+							#if defined(DEBUG_MODE)
+							log(thread_id, "ARG GROUNDED --> TERM");
+							#endif
 							return true;
 						}
 						grounded.push_back(af.int_to_arg[arg2]);
@@ -140,31 +129,38 @@ bool ds_preferred_r(const AF & af, string const & arg, vector<pair<string,string
 	AF new_af = af;
 	if (!grounded.empty()) {
 		new_af = getReduct(af, grounded, atts);
-		//log(thread_id, "REMOVED GROUNDED EXT");
-		//log(thread_id, "GROUNDED EXT", grounded);
+		#if defined(DEBUG_MODE)
+		log(thread_id, "REMOVED GROUNDED EXT", grounded);
+		#endif
 	}
 	//====================================================================================================================================
 
 	if (preferred_ce_found) {
-		//log(thread_id, "SIGNAL --> TERM");
+		#if defined(DEBUG_MODE)
+		log(thread_id, "SIGNAL --> TERM");
+		#endif
 		return true;
 	}
 
 	// Compute the SCCs of the current argumentation framework, we can then spawn one thread for each SCC to search for initial sets more effectively
-	//log(thread_id, "COMPUTING SCCS");
 	vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(new_af);
-	//log(thread_id, "COMPUTED SCCS");
+	#if defined(DEBUG_MODE)
+	log(thread_id, "COMPUTED SCCS");
+	#endif
 	
 	if (preferred_ce_found) {
-		//log(thread_id, "SIGNAL --> TERM");
+		#if defined(DEBUG_MODE)
+		log(thread_id, "SIGNAL --> TERM");
+		#endif
 		return true;
 	}
 
 	// For each SCC, create a new thread to search for initial sets
-	//log(thread_id, "STARTING SCC LOOP");
 	for (size_t i = 0; i < sccs.size(); i++) {
 		if (preferred_ce_found) {
-			//log(thread_id, "SIGNAL --> TERM");
+			#if defined(DEBUG_MODE)
+			log(thread_id, "SIGNAL --> TERM");
+			#endif
 			return true;
 		}
 		// If SCC consists of only one argument, it won't have any initial set.
@@ -174,17 +170,21 @@ bool ds_preferred_r(const AF & af, string const & arg, vector<pair<string,string
 			continue;
 		}
 
-		//log(thread_id, "DETACHING TASK FOR SCC");
+		#if defined(DEBUG_MODE)
+		log(thread_id, "DETACHING TASK FOR SCC");
+		#endif
 		vector<uint32_t> scc = sccs[i];
 		boost::asio::post(pool, [new_af, arg, &atts, base_ext, scc] {ds_preferred_r_scc(new_af, arg, atts, base_ext, scc);});
 	}
 
-	//log(thread_id, "LOOPED ALL SCCS --> TERM");
+	#if defined(DEBUG_MODE)
+	log(thread_id, "LOOPED ALL SCCS --> TERM");
+	#endif
 	return true;
 }
 
 /*
-helper function for the DS-PR problem that searches for the initial sets of a SCC and creates new threads for each initial set found
+helper function (threaded) for the DS-PR problem that searches for the initial sets of a SCC and creates new threads for each initial set found
 
 @param af		the argumentation framework
 @param arg		the argument to be decided
@@ -195,13 +195,17 @@ helper function for the DS-PR problem that searches for the initial sets of a SC
 @returns 'false' if the current extension is a counterexample for the skeptical acceptance of arg, 'true' if arg is accepted by the constructed extension
 */
 bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts, std::vector<std::string> base_ext, std::vector<uint32_t> scc) {
+	#if defined(DEBUG_MODE)
 	int thread_id = thread_counter++;
-	//log(thread_id, "STARTING THREAD FOR SCC");
-	//log(thread_id, "SCC", scc, af);
+	log(thread_id, "STARTING THREAD FOR SCC");
+	log(thread_id, "SCC", scc, af);
+	#endif
 
 	// check termination flag (some other thread found a counterexample)
 	if (preferred_ce_found) {
-		//log(thread_id, "SIGNAL --> TERM");
+		#if defined(DEBUG_MODE)
+		log(thread_id, "SIGNAL --> TERM");
+		#endif
 		return true;
 	}
 
@@ -209,13 +213,7 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
 	vector<string> extension;
     vector<int> complement_clause;
     complement_clause.reserve(af.args);
-	#if defined(SAT_EXTERNAL)
 	SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
-	#elif defined(SAT_CMSAT)
-	SAT_Solver solver = SAT_Solver(af.count, af.args);
-	#else
-	#error "No SAT solver defined"
-	#endif
 	Encodings::add_admissible(af, solver);
     Encodings::add_nonempty_subset_of(af, scc, solver);	
 
@@ -224,7 +222,9 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
 	while (true) {
 		// check termination flag (some other thread found a counterexample)
 		if (preferred_ce_found) {
-			//log(thread_id, "SIGNAL --> TERM");
+			#if defined(DEBUG_MODE)
+			log(thread_id, "SIGNAL --> TERM");
+			#endif
 			return true;
 		}
 		
@@ -233,17 +233,25 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
         while (true) {
 			// check termination flag (some other thread found a counterexample)
 			if (preferred_ce_found) {
-				//log(thread_id, "SIGNAL --> TERM");
+				#if defined(DEBUG_MODE)
+				log(thread_id, "SIGNAL --> TERM");
+				#endif
 				return true;
 			}
 
-			//log(thread_id, "LOOKING FOR NEW MODEL");
+			#if defined(DEBUG_MODE)
+			log(thread_id, "LOOKING FOR NEW MODEL");
+			#endif
             int sat = solver.solve();
-			//log(thread_id, "SOLVER RESPONDED");
+			#if defined(DEBUG_MODE)
+			log(thread_id, "SOLVER RESPONDED");
+			#endif
 
 			// check termination flag (some other thread found a counterexample)
 			if (preferred_ce_found) {
-				//log(thread_id, "SIGNAL --> TERM");
+				#if defined(DEBUG_MODE)
+				log(thread_id, "SIGNAL --> TERM");
+				#endif
 				return true;
 			}
 
@@ -259,7 +267,10 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
                     extension.push_back(af.int_to_arg[i]);
                 }
             }
-			//log(thread_id, "MODEL", extension);
+
+			#if defined(DEBUG_MODE)
+			log(thread_id, "MODEL", extension);
+			#endif
 
 			// No minimization needed, if extension has already size of 1
 			if (extension.size() == 1) {
@@ -281,19 +292,24 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
         }
 		// If an initial set has been found , start a new thread with the initial set and the respective reduct
         if (foundExt) {
-			//log(thread_id, "MINIMAL MODEL", extension);
+			#if defined(DEBUG_MODE)
+			log(thread_id, "MINIMAL MODEL", extension);
+			#endif
 
 			// If 'arg' is in the initial set, the preferred extension accepts it and will never be a counterexample, 
 			// i.e., we continue without creating a thread for it
 			if (std::find(extension.begin(), extension.end(), arg) != extension.end()) {
-				//log(thread_id, "MODEL ACCEPTS ARG --> SKIP");
+				#if defined(DEBUG_MODE)
+				log(thread_id, "MODEL ACCEPTS ARG --> SKIP");
+				#endif
 			} else {
 				// If there exists an attack from the initial set to 'arg', the model rejects arg, thus we found a counterexample
 				for(auto const& a: extension) {
 					if (af.att_exists.find(make_pair(af.arg_to_int.find(a)->second, af.arg_to_int.find(arg)->second)) != af.att_exists.end()) {
-						//log(thread_id, "MODEL REJECTS ARG --> TERM NO");
+						#if defined(DEBUG_MODE)
+						log(thread_id, "MODEL REJECTS ARG --> TERM NO");
+						#endif
 						preferred_ce_found = true;
-						io_context.stop();
 						return false;
 					}
 				}
@@ -313,14 +329,18 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
 				bool already_checked = checked_branches.find(branch) != checked_branches.end();
 				mtx.unlock();
 				if (already_checked) {
-					//log(thread_id, "BRANCH ALREADY CHECKED --> SKIP");
+					#if defined(DEBUG_MODE)
+					log(thread_id, "BRANCH ALREADY CHECKED --> SKIP");
+					#endif
 				} else {
 					// The extension has not been checked before, that means a new thread can be created
 					mtx.lock();
 					checked_branches.insert(branch);
 					mtx.unlock();
 
-					//log(thread_id, "DETACHING NEW TASK");
+					#if defined(DEBUG_MODE)
+					log(thread_id, "DETACHING NEW TASK");
+					#endif
 					const AF reduct = getReduct(af, extension, atts);
 					boost::asio::post(pool, [reduct, arg, &atts, new_ext] {ds_preferred_r(reduct, arg, atts, new_ext);});
 				}
@@ -329,13 +349,16 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
 			// No further initial set has been found for the SCC
 			if (no_initial_set_exists) {
 				// The SCC has no initial sets at all: base_ext is a preferred extension and since it does not contain 'arg' it is a counterexample
-				//log(thread_id, "CURRENT EXT IS PREFERRED AND ARG NOT INCLUDED --> TERM NO");
+				#if defined(DEBUG_MODE)
+				log(thread_id, "CURRENT EXT IS PREFERRED AND ARG NOT INCLUDED --> TERM NO");
+				#endif
 				preferred_ce_found = true;
-				io_context.stop();
             	return false;
 			} else {
 				// The SCC has had at least one initial set: no definite decision possible yet, search continues in the created threads
-				//log(thread_id, "NO MORE INITIAL SETS --> TERM");
+				#if defined(DEBUG_MODE)
+				log(thread_id, "NO MORE INITIAL SETS --> TERM");
+				#endif
             	return true;
 			}
         }
@@ -351,9 +374,36 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
         }
         solver.addClause(complement_clause);
 	}
-	//log(thread_id, "DONE --> TERM");
+	#if defined(DEBUG_MODE)
+	log(thread_id, "DONE --> TERM");
+	#endif
 	return true;
 }
+
+/*
+Main method for solving the DS-PR problem
+
+@param af	the argumentation framework
+@param arg	the argument to be decided
+@param atts	list of all attacks of the AF (only for faster reduct construction)
+
+@returns 'true' if arg is skeptically accepted wrt preferred semantics, 'false' otherwise
+*/
+bool ds_preferred(const AF & af, string const & arg, vector<pair<string,string>> & atts) {
+	preferred_ce_found = false;
+
+	// Initialize search, starting with the empty set
+    vector<string> ext;
+	boost::asio::post(pool, [af, arg, &atts, ext] {ds_preferred_r(af, arg, atts, ext);});
+		
+	// Wait for all threads to finish and return result
+	// TODO Optimize pool destruction if counterexample has been found
+	pool.join();
+    return !preferred_ce_found;
+}
+
+//================================================================================================================================================
+//================================================================================================================================================
 
 /*!
  * The following is largely taken from the mu-toksia solver
@@ -389,22 +439,13 @@ bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std:
 
 /*mutoksia version of ds-pr, for internal testing purposes*/
 bool mt_ds_preferred(const AF & af, string const & arg) {
-	#if defined(SAT_EXTERNAL)
 	SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
-	#elif defined(SAT_CMSAT)
-	SAT_Solver solver = SAT_Solver(af.count, af.args);
-	#else
-	#error "No SAT solver defined"
-	#endif
 	Encodings::add_complete(af, solver);
 
 	vector<int> assumptions = { -af.accepted_var[af.arg_to_int.at(arg)] };
 
 	while (true) {
-		//log(0, "LOOKING FOR MODEL");
 		int sat = solver.solve(assumptions);
-		//log(0, "SOLVER RESPONDED");
-		//log(0, sat);
 		for (size_t i = 0; i < solver.model.size(); i++) {
 			cout << i << ": " << solver.model[i] << "\n";
 		}
