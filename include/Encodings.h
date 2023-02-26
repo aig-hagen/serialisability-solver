@@ -3,6 +3,7 @@
 
 #include "AF.h"
 #include "ExternalSatSolver.h"
+#include "CryptoMiniSatSolver.h"
 
 namespace Encodings {
 
@@ -12,6 +13,9 @@ void add_conflict_free(const AF & af, ExternalSatSolver & solver);
 void add_admissible(const AF & af, ExternalSatSolver & solver);
 void add_complete(const AF & af, ExternalSatSolver & solver);
 
+void add_conflict_free(const AF & af, CryptoMiniSatSolver & solver);
+void add_nonempty_subset_of(const AF & af, std::vector<uint32_t> args, CryptoMiniSatSolver & solver);
+void add_admissible(const AF & af, CryptoMiniSatSolver & solver);
 }
 
 #endif
