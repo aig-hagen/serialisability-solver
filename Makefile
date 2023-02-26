@@ -20,7 +20,6 @@ LDFLAGS = -lpthread
 CFLAGS   += $(COPTIMIZE)
 CFLAGS   += -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
 CFLAGS   += -D CONE_OF_INFLUENCE
-#CFLAGS   += -D INITIAL_VIA_SCCS
 
 SAT_SOLVER = cryptominisat
 CMSAT      = lib/cryptominisat-5.8.0

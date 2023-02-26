@@ -152,7 +152,7 @@ bool unchallenged_naive(const AF & af, vector<pair<string,string>> & atts) {
     return true;
 }
 
-set<set<string>> unchallenged_naive_r(const AF & original_af, const AF & af, vector<pair<string,string>> & atts, set<string> base_ext) {
+set<set<string>> unchallenged_naive_r(const AF & original_af, const AF & af, std::vector<std::pair<std::string,std::string>> & atts, set<string> base_ext) {
     set<vector<string>> candidateSets = ua_or_uc_initial_naive(af);
     set<set<string>> exts;
 

@@ -1,4 +1,8 @@
 /*!
+ * The following is largely taken from the mu-toksia solver
+ * and is subject to the following licence.
+ * 
+ * 
  * Copyright (c) <2020> <Andreas Niskanen, University of Helsinki>
  * 
  * 
@@ -27,7 +31,6 @@
  */
 
 #include "CryptoMiniSatSolver.h"
-#include "Util.h"
 
 using namespace std;
 using namespace CMSat;
@@ -58,32 +61,56 @@ void CryptoMiniSatSolver::addMinimizationClause(const vector<int> & clause) {
 	minimization_clauses.push_back(lits);
 }
 
-int CryptoMiniSatSolver::solve(int thread_id) {
-	//log(thread_id, "INITIALIZING SOLVER");
-	//log(thread_id, ((int)n_vars));
+int CryptoMiniSatSolver::solve() {
 	CMSat::SATSolver solver;
 	solver.set_num_threads(1);
 	solver.new_vars(n_vars);
-	//log(thread_id, "ADDING CLAUSES");
 	for(auto const& clause: clauses) {
 		solver.add_clause(clause);
 	}
-	//log(thread_id, "ADDING MIN CLAUSES");
 	for(auto const& clause: minimization_clauses) {
 		solver.add_clause(clause);
 	}
 	minimization_clauses.clear();
-	//log(thread_id, "SOLVING");
 	bool sat = (solver.solve() == l_True);
-	//log(thread_id, "SOLVED");
 	model.clear();
 	if (sat) {
-		//log(thread_id, "PARSING MODEL");
 		for (int i = 0; i < n_vars; i++) {
 			model[i] = (solver.get_model()[i] == l_True) ? true : false;
 		}
-		//log(thread_id, "MODEL PARSED");
 	}
-	//log(thread_id, sat);
 	return sat ? 10 : 20;
+}
+
+int CryptoMiniSatSolver::solve(const std::vector<int> & assumptions) {
+	// TODO never checked for correctness
+	CMSat::SATSolver solver;
+	solver.set_num_threads(1);
+	solver.new_vars(n_vars);
+	for(auto const& clause: clauses) {
+		solver.add_clause(clause);
+	}
+	for(auto const& clause: minimization_clauses) {
+		solver.add_clause(clause);
+	}
+	minimization_clauses.clear();
+	vector<Lit> lits(assumptions.size());
+	for (int i = 0; i < assumptions.size(); i++) {
+		int var = abs(assumptions[i])-1;
+		lits[i] = Lit(var, (assumptions[i] > 0) ? false : true);
+	}
+	bool sat = (solver.solve(&lits) == l_True);
+	model.clear();
+	if (sat) {
+		for (int i = 0; i < n_vars; i++) {
+			model[i] = (solver.get_model()[i] == l_True) ? true : false;
+		}
+	}
+	return sat ? 10 : 20;
+}
+
+void CryptoMiniSatSolver::free() {
+	clauses.clear();
+	minimization_clauses.clear();
+	model.clear();
 }

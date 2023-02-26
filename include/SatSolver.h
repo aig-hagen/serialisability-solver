@@ -1,8 +1,8 @@
 /*!
  * The following is largely taken from the mu-toksia solver
  * and is subject to the following licence.
- * 
- * 
+ *
+ *
  * Copyright (c) <2020> <Andreas Niskanen, University of Helsinki>
  * 
  * 
@@ -30,31 +30,29 @@
  * THE SOFTWARE.
  */
 
-#ifndef CMSAT_SOLVER_H
-#define CMSAT_SOLVER_H
+#ifndef SAT_SOLVER_H
+#define SAT_SOLVER_H
 
-#include "SatSolver.h"
-#include <cryptominisat5/cryptominisat.h>
+#include <stdint.h>
+#include <vector>
+
 
 /*
-Class that models the Crpytominisat5 SAT solver
-SAT calls are answered by directly asking the API of cryptominisat
+General interface for SAT solvers
 */
-class CryptoMiniSatSolver : public SatSolver {
+class SatSolver {
 
 public:
-	uint32_t n_args; // number of interesting vars
-	uint32_t n_vars; // number of vars
-	std::vector<std::vector<CMSat::Lit>> clauses;
-    std::vector<std::vector<CMSat::Lit>> minimization_clauses;
+	std::vector<bool> model;
 
-	CryptoMiniSatSolver(uint32_t number_of_vars, uint32_t number_of_arg_vars);
-	~CryptoMiniSatSolver() {};
-	void addClause(const std::vector<int> & clause);
-	void addMinimizationClause(const std::vector<int> & clause);
-	int solve();
-	int solve(const std::vector<int> & assumptions);
-	void free();
+	SatSolver() {}
+	virtual ~SatSolver() {}
+	virtual void addClause(const std::vector<int> & clause) = 0;
+	virtual void addMinimizationClause(const std::vector<int> & clause) = 0;
+	virtual int solve() = 0;
+	virtual int solve(const std::vector<int> & assumptions) = 0;
+	virtual void free() = 0;
+
 };
 
 #endif
