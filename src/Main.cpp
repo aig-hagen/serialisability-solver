@@ -343,6 +343,9 @@ int main(int argc, char ** argv)
 				case IT:
 					Problems::ee_initial(af);
 					break;
+				case PR:
+					Problems::ee_preferred(af, atts);
+					break;
 				case UC:
 					//EnumExtensions::unchallenged_naive(af, atts);
 					Problems::ee_unchallenged(af, atts);

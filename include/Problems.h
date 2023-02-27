@@ -4,6 +4,8 @@
 #include "Util.h"
 #include "Encodings.h"
 
+#include <atomic>
+
 namespace Problems {
 
 // INITIAL
@@ -25,19 +27,24 @@ bool ce_initial(const AF & af); // counts the types of initial sets and their si
 // UNCHALLENGED
 
 // DS-UC
+
 bool ds_unchallenged(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts);
 
 // EE-UC
+
 bool ee_unchallenged(const AF & af, std::vector<std::pair<std::string,std::string>> & atts);
 
 
 // PREFERRED
 
 // DS-PR
+
 bool mt_ds_preferred(const AF & af, std::string const & arg);
 bool ds_preferred(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts);
-bool ds_preferred_r(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts, std::vector<std::string> base_ext);
-bool ds_preferred_r_scc(const AF & af, std::string const & arg, std::vector<std::pair<std::string,std::string>> & atts, std::vector<std::string> base_ext, std::vector<uint32_t> scc);
+
+// EE-PR
+
+bool ee_preferred(const AF & af, std::vector<std::pair<std::string,std::string>> & atts);
 
 //GROUNDED
 

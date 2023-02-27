@@ -9,8 +9,7 @@
 
 using namespace std;
 
-void print_extension(const AF & af, const std::vector<uint32_t> & extension)
-{
+void print_extension(const AF & af, const std::vector<uint32_t> & extension) {
 	cout << "[";
 	for (uint32_t i = 0; i < extension.size(); i++) {
 		cout << af.int_to_arg[extension[i]];
@@ -19,8 +18,7 @@ void print_extension(const AF & af, const std::vector<uint32_t> & extension)
 	cout << "]\n";
 }
 
-void print_extension_ee(const AF & af, const std::vector<uint32_t> & extension)
-{
+void print_extension_ee(const AF & af, const std::vector<uint32_t> & extension) {
 	std::cout << "[";
 	for (uint32_t i = 0; i < extension.size(); i++) {
 		std::cout << af.int_to_arg[extension[i]];
@@ -29,14 +27,26 @@ void print_extension_ee(const AF & af, const std::vector<uint32_t> & extension)
 	std::cout << "]";
 }
 
-void print_extension_ee(const std::vector<string> & extension)
-{
+void print_extension_ee(const std::vector<string> & extension) {
 	std::cout << "[";
 	for (uint32_t i = 0; i < extension.size(); i++) {
 		std::cout << extension[i];
 		if (i != extension.size()-1) cout << ",";
 	}
 	std::cout << "]";
+}
+
+mutex mtx_stdout;
+
+void print_extension_ee_parallel(const std::vector<string> & extension) {
+	mtx_stdout.lock();
+	std::cout << "[";
+	for (uint32_t i = 0; i < extension.size(); i++) {
+		std::cout << extension[i];
+		if (i != extension.size()-1) cout << ",";
+	}
+	std::cout << "],";
+	mtx_stdout.unlock();
 }
 
 void print_extension_ee(const std::set<string> & extension) {
