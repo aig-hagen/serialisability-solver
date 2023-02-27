@@ -49,6 +49,17 @@ void print_extension_ee_parallel(const std::vector<string> & extension) {
 	mtx_stdout.unlock();
 }
 
+void print_extension_ee_parallel(const AF & af, const std::vector<uint32_t> & extension) {
+	mtx_stdout.lock();
+	std::cout << "[";
+	for (uint32_t i = 0; i < extension.size(); i++) {
+		std::cout << af.int_to_arg[extension[i]];
+		if (i != extension.size()-1) cout << ",";
+	}
+	std::cout << "],";
+	mtx_stdout.unlock();
+}
+
 void print_extension_ee(const std::set<string> & extension) {
 	std::cout << "[";
 	int ct = 0;

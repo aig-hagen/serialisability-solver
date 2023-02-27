@@ -51,6 +51,7 @@ public:
     std::vector<std::vector<CMSat::Lit>> minimization_clauses;
 
 	CryptoMiniSatSolver(uint32_t number_of_vars, std::string path_to_solver);
+	CryptoMiniSatSolver(const CryptoMiniSatSolver& obj);
 	~CryptoMiniSatSolver() {};
 	void addClause(const std::vector<int> & clause);
 	void addMinimizationClause(const std::vector<int> & clause);

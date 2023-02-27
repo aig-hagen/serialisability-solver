@@ -1,6 +1,17 @@
 #include "Problems.h"
 
+#include <thread>
+#include <algorithm>
+#include <atomic>
+
+#include <boost/asio/thread_pool.hpp>		// handles threads
+#include <boost/asio/post.hpp>				// for submitting tasks to thread pool
+
 using namespace std;
+
+// Initialize Thread Pool with (#sys_threads - 1) number of threads
+int num_max_threads_eeit = std::thread::hardware_concurrency()-1;
+boost::asio::thread_pool pool_eeit(num_max_threads_eeit);
 
 namespace Problems {
 
@@ -105,71 +116,86 @@ set<vector<string>> get_ua_or_uc_initial(const AF & af) {
 	return result;
 }
 
-bool ee_initial(const AF & af) {
-    std::cout << "[";
-
-    int count = 0;
+bool ee_initial_r(const AF & af, const vector<uint32_t> & scc, const SAT_Solver & solver_base) {
     vector<uint32_t> extension;
     vector<int> complement_clause;
+    vector<int> assumptions;
     complement_clause.reserve(af.args);
+    assumptions.reserve(af.args);
+    for (uint32_t i = 0; i < af.args; i++) { 
+        if (std::find(scc.begin(), scc.end(), i) == scc.end()) {
+            assumptions.push_back(-af.accepted_var[i]);
+        }
+    }
+    SAT_Solver solver = SAT_Solver(solver_base);
+    while (true) {
+        bool foundExt = false;
+        vector<int> new_assumptions = assumptions;
+        new_assumptions.reserve(af.args);
+        while (true) {
+            int sat = solver.solve(new_assumptions);
+            if (sat==20) break;
+            
+            foundExt = true;
+            extension.clear();
+            for (uint32_t i = 0; i < af.args; i++) {
+                if (solver.model[af.accepted_var[i]]) {
+                    extension.push_back(i);
+                }
+            }
+
+            if (extension.size() == 1) {
+                break;
+            }
+
+            vector<int> min_complement_clause;
+            min_complement_clause.reserve(af.args);
+            for (uint32_t i = 0; i < af.args; i++) {
+                if (solver.model[af.accepted_var[i]]) {
+                    min_complement_clause.push_back(-af.accepted_var[i]);
+                } else {
+                    //vector<int> unit_clause = { -af.accepted_var[i] };
+                    //solver.addMinimizationClause(unit_clause);
+                    new_assumptions.push_back(-af.accepted_var[i]);
+                }
+            }
+            solver.addMinimizationClause(min_complement_clause);
+        }
+        if (foundExt) {
+            print_extension_ee_parallel(af, extension);
+        } else {
+            return true;
+        }
+
+        complement_clause.clear();
+        for (uint32_t i = 0; i < af.args; i++) {
+            if (solver.model[af.accepted_var[i]]) {
+                complement_clause.push_back(-af.accepted_var[i]);
+            } else {
+                //complement_clause.push_back(-af.rejected_var[i]);
+            }
+        }
+        solver.addClause(complement_clause);       
+    }
+    return true;
+}
+
+bool ee_initial(const AF & af) {
+    std::cout << "[";
     
     if (!af.args) {
         std::cout << "]\n";
         return true;
     }
 
+    SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
+    Encodings::add_admissible(af, solver);
+    Encodings::add_nonempty(af, solver);
     vector<vector<uint32_t>> sccs = computeStronglyConnectedComponents(af);
     for (auto const& scc: sccs) {
-        SAT_Solver solver = SAT_Solver(af.count, af.solver_path);
-        Encodings::add_admissible(af, solver);
-        Encodings::add_nonempty_subset_of(af, scc, solver);
-
-        while (true) {
-            bool foundExt = false;
-            while (true) {
-                int sat = solver.solve();          
-                if (sat==20) break;
-                
-                foundExt = true;
-                extension.clear();
-                for (uint32_t i = 0; i < af.args; i++) {
-                    if (solver.model[af.accepted_var[i]]) {
-                        extension.push_back(i);
-                    }
-                }
-
-                vector<int> min_complement_clause;
-                min_complement_clause.reserve(af.args);
-                for (uint32_t i = 0; i < af.args; i++) {
-                    if (solver.model[af.accepted_var[i]]) {
-                        min_complement_clause.push_back(-af.accepted_var[i]);
-                    } else {
-                        vector<int> unit_clause = { -af.accepted_var[i] };
-                        solver.addMinimizationClause(unit_clause);
-                    }
-                }
-                solver.addMinimizationClause(min_complement_clause);
-            }
-            if (foundExt) {
-                if (!count++ == 0) {
-                    std::cout << ", ";
-                }
-                print_extension_ee(af, extension);
-            } else {
-                break;
-            }
-
-            complement_clause.clear();
-            for (uint32_t i = 0; i < af.args; i++) {
-                if (solver.model[af.accepted_var[i]]) {
-                    complement_clause.push_back(-af.accepted_var[i]);
-                } else {
-                    //complement_clause.push_back(-af.rejected_var[i]);
-                }
-            }
-            solver.addClause(complement_clause);       
-        }
+        boost::asio::post(pool_eeit, [af, scc, solver] { ee_initial_r(af, scc, solver); });
 	}
+    pool_eeit.join();
     std::cout << "]\n";
 	return true;
 }

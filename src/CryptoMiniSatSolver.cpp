@@ -42,6 +42,16 @@ CryptoMiniSatSolver::CryptoMiniSatSolver(uint32_t number_of_vars, std::string pa
     minimization_clauses = std::vector<std::vector<Lit>>();
 }
 
+CryptoMiniSatSolver::CryptoMiniSatSolver(const CryptoMiniSatSolver & obj) {
+	n_vars = obj.n_vars;
+	model = vector<bool>(n_vars+1);
+	clauses.reserve(obj.clauses.size());
+	for(auto const& clause: obj.clauses) {
+		clauses.push_back(clause);
+	}
+	minimization_clauses = std::vector<std::vector<Lit>>();
+}
+
 void CryptoMiniSatSolver::addClause(const vector<int> & clause) {
 	vector<Lit> lits(clause.size());
 	for (int i = 0; i < clause.size(); i++) {
@@ -82,7 +92,6 @@ int CryptoMiniSatSolver::solve() {
 }
 
 int CryptoMiniSatSolver::solve(const std::vector<int> & assumptions) {
-	// TODO never checked for correctness
 	CMSat::SATSolver solver;
 	solver.set_num_threads(1);
 	solver.new_vars(n_vars);
@@ -95,7 +104,7 @@ int CryptoMiniSatSolver::solve(const std::vector<int> & assumptions) {
 	minimization_clauses.clear();
 	vector<Lit> lits(assumptions.size());
 	for (int i = 0; i < assumptions.size(); i++) {
-		int var = abs(assumptions[i])-1;
+		int var = abs(assumptions[i]);
 		lits[i] = Lit(var, (assumptions[i] > 0) ? false : true);
 	}
 	bool sat = (solver.solve(&lits) == l_True);
