@@ -1,25 +1,28 @@
 #include "Problems.h"					// Header for all Problem methods
 
 #include <algorithm>                    // std::find
+
+#if defined(PARALLEL)
 #include <mutex>                        // for checking duplicate thread creating
 #include <thread>						// std::thread::hardware_concurrency()
-
 #include <boost/asio/thread_pool.hpp>	// handles threads
 #include <boost/asio/post.hpp>			// for submitting tasks to thread pool
+#endif
 
 using namespace std;
 
 // Variables for preventing duplicate threads
 set<set<string>> checked_branches_eeuc;
-mutex mtx_eeuc;
 
+#if defined(PARALLEL)
+mutex mtx_eeuc;
 // Lock for synchronizing output of extensions
 mutex stdout_lock_eeuc;
 
 // Initialize thread pool
 auto num_max_threads_eeuc = std::thread::hardware_concurrency()-1;
 boost::asio::thread_pool pool_eeuc(num_max_threads_eeuc);
-
+#endif
 
 namespace Problems {
 
@@ -36,9 +39,11 @@ bool ee_unchallenged_r(const AF & af, std::vector<std::pair<std::string,std::str
     set<vector<string>> ua_uc_initial_sets = get_ua_or_uc_initial(af);
 
     if (ua_uc_initial_sets.empty()) {
-        stdout_lock_eeuc.lock();
+        #if defined(PARALLEL)
+        print_extension_ee_parallel(base_ext);
+        #else
         print_extension_ee(base_ext);
-        stdout_lock_eeuc.unlock();
+        #endif
         return true;
     }
     
@@ -54,15 +59,28 @@ bool ee_unchallenged_r(const AF & af, std::vector<std::pair<std::string,std::str
             branch.insert(arg);
         }
         
+        #if defined(PARALLEL)
         mtx_eeuc.lock();
         bool already_checked = checked_branches_eeuc.find(branch) != checked_branches_eeuc.end();
         mtx_eeuc.unlock();
+        #else
+        bool already_checked = checked_branches_eeuc.find(branch) != checked_branches_eeuc.end();
+        #endif
         if (!already_checked) {
+            #if defined(PARALLEL)
             mtx_eeuc.lock();
             checked_branches_eeuc.insert(branch);
             mtx_eeuc.unlock();
+            #else
+            checked_branches_eeuc.insert(branch);
+            #endif
+
             const AF reduct = getReduct(af, ext, atts);
+            #if defined(PARALLEL)
             boost::asio::post(pool_eeuc, [reduct, &atts, new_ext] { ee_unchallenged_r(reduct, atts, new_ext); });
+            #else
+            ee_unchallenged_r(reduct, atts, new_ext);
+            #endif
         }
         
     }
@@ -81,9 +99,13 @@ bool ee_unchallenged(const AF & af, vector<pair<string,string>> & atts) {
     std::cout << "[";
     
     vector<string> ext;
+    #if defined(PARALLEL)
     boost::asio::post(pool_eeuc, [af, &atts, ext] { ee_unchallenged_r(af, atts, ext); });
-    
     pool_eeuc.join();
+    #else
+    ee_unchallenged_r(af, atts, ext);
+    #endif
+    
     std::cout << "]\n";
     return true;
 }

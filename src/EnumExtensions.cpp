@@ -1,4 +1,3 @@
-#include "Encodings.h"
 #include "Util.h"
 #include "EnumExtensions.h"
 #include <cmath>

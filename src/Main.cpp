@@ -297,70 +297,15 @@ int main(int argc, char ** argv)
 	af.set_solver_path(sat_path);
 
 	switch (string_to_task(task)) {
-		case DS:
-		{
-			if (query.empty()) {
-				cerr << argv[0] << ": Query argument must be specified via -a flag\n";
-				return 1;
-			}
-			bool skept_accepted = false;
-			switch (string_to_sem(task)) {
-				case PR:
-					//skept_accepted = Problems::mt_ds_preferred(af, query);
-					skept_accepted = Problems::ds_preferred(af, query, atts);
-					break;
-				case UC:
-					skept_accepted = Problems::ds_unchallenged(af, query, atts);
-					break;
-				default:
-					cerr << argv[0] << ": Unsupported semantics\n";
-					return 1;
-			}
-			cout << (skept_accepted ? "YES" : "NO") << "\n";
-			break;
-		}
-		case SE:
-		{
-			vector<string> extension;
-			switch (string_to_sem(task)) {
-				case GR:
-					extension = Problems::se_grounded(af);
-					print_extension_ee(extension);
-					cout << "\n";
-					break;
-				case IT:
-					Problems::se_initial(af);
-					break;
-				default:
-					cerr << argv[0] << ": Problem not supported!\n";
-					return 1;
-			}
-			break;
-		}
 		case EE:
 		{
 			switch (string_to_sem(task)) {
-				case IT:
-					Problems::ee_initial(af);
-					break;
-				case PR:
-					Problems::ee_preferred(af, atts);
-					break;
 				case UC:
-					//EnumExtensions::unchallenged_naive(af, atts);
+					#if defined(NAIVE)
+					EnumExtensions::unchallenged_naive(af, atts);
+					#else
 					Problems::ee_unchallenged(af, atts);
-					break;
-				default:
-					cerr << argv[0] << ": Problem not supported!\n";
-					return 1;
-			}
-			break;
-		}
-		case CE:
-		{
-			switch (string_to_sem(task)) {
-				case IT:
-					Problems::ce_initial(af);
+					#endif
 					break;
 				default:
 					cerr << argv[0] << ": Problem not supported!\n";
