@@ -117,6 +117,7 @@ set<vector<string>> get_ua_or_uc_initial(const AF & af) {
 }
 
 bool ee_initial_r(const AF & af, const vector<uint32_t> & scc, const SAT_Solver & solver_base) {
+    std::cout << num_max_threads_eeit << endl;
     vector<uint32_t> extension;
     vector<int> complement_clause;
     vector<int> assumptions;
