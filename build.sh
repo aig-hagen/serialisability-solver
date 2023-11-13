@@ -1,3 +1,3 @@
 #!/bin/bash
-make cmsat
+#make cmsat
 make

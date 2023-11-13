@@ -5,29 +5,9 @@
 #include <stack>
 #include <algorithm>
 #include <fstream>
-#include <mutex>
 
 using namespace std;
 
-void print_extension(const AF & af, const std::vector<uint32_t> & extension)
-{
-	cout << "[";
-	for (uint32_t i = 0; i < extension.size(); i++) {
-		cout << af.int_to_arg[extension[i]];
-		if (i != extension.size()-1) cout << ",";
-	}
-	cout << "]\n";
-}
-
-void print_extension_ee(const AF & af, const std::vector<uint32_t> & extension)
-{
-	std::cout << "[";
-	for (uint32_t i = 0; i < extension.size(); i++) {
-		std::cout << af.int_to_arg[extension[i]];
-		if (i != extension.size()-1) cout << ",";
-	}
-	std::cout << "]";
-}
 
 void print_extension_ee(const std::vector<string> & extension)
 {
@@ -49,7 +29,7 @@ void print_extension_ee(const std::set<string> & extension) {
 	}
 	std::cout << "]";
 }
-
+/*
 AF getReduct(const AF & af, vector<string> ext, vector<pair<string,string>> & atts) {
 	if (ext.empty()) {
 		return af;
@@ -99,7 +79,7 @@ AF getReduct(const AF & af, vector<string> ext, vector<pair<string,string>> & at
 	}
 	return reduct;
 }
-
+*/
 /*
  * The following functions for working with SCCs have been adapted from the fudge argumentation-solver
  * which is subject to the GPL3 licence. 
@@ -154,80 +134,4 @@ vector<vector<uint32_t>> computeStronglyConnectedComponents(const AF & af) {
         }
     }
     return *sccs;
-}
-
-// print the set of strongly connected components
-void print_sccs(const AF & af, vector<vector<uint32_t>> sccs) {
-    for(auto const& scc: sccs) {
-        cout << "<";
-        char isFirst = true;
-        for(auto const& arg: scc) {
-            if (isFirst) {
-                isFirst = false;
-                cout << af.int_to_arg[arg];
-            } else {
-				cout << "," << af.int_to_arg[arg];
-			}
-        }
-        cout << ">\n";
-    }
-}
-
-mutex mtx_log;
-
-void log(int thread_id, string output) {
-	mtx_log.lock();
-	std::ofstream outfile;
-	outfile.open("out.log", std::ios_base::app);
-	outfile << thread_id << ": " << output <<"\n";
-	outfile.close();
-	mtx_log.unlock();
-}
-
-void log(int thread_id, int output) {
-	mtx_log.lock();
-	std::ofstream outfile;
-	outfile.open("out.log", std::ios_base::app);
-	outfile << thread_id << ": " << output <<"\n";
-	outfile.close();
-	mtx_log.unlock();
-}
-
-void log(int thread_id, std::string output, vector<int> clause) {
-	mtx_log.lock();
-	std::ofstream outfile;
-	outfile.open("out.log", std::ios_base::app);
-	outfile << thread_id << ": " << output << ": ";
-	for(auto const& arg: clause) {
-		outfile << arg << ",";
-	}
-	outfile << "\n";
-	outfile.close();
-	mtx_log.unlock();
-}
-
-void log(int thread_id, std::string output, vector<string> ext) {
-	mtx_log.lock();
-	std::ofstream outfile;
-	outfile.open("out.log", std::ios_base::app);
-	outfile << thread_id << ": " << output << ": ";
-	for(auto const& arg: ext) {
-		outfile << arg << ",";
-	}
-	outfile << "\n";
-	outfile.close();
-	mtx_log.unlock();
-}
-
-void log(int thread_id, std::string output, vector<uint32_t> ext, const AF & af) {
-	mtx_log.lock();
-	std::ofstream outfile;
-	outfile.open("out.log", std::ios_base::app);
-	outfile << thread_id << ": " << output << ": ";
-	for(auto const& arg: ext) {
-		outfile << af.int_to_arg[arg] << ",";
-	}
-	outfile << "\n";
-	outfile.close();
-	mtx_log.unlock();
 }

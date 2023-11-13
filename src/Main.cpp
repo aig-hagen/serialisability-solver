@@ -1,37 +1,4 @@
-/*!
- * The following is largely taken from the mu-toksia argumentation-solver
- * and is subject to the following licence.
- *
- * 
- * Copyright (c) <2020> <Andreas Niskanen, University of Helsinki>
- * 
- * 
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * 
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * 
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 #include "AF.h"				// Modelling of argumentation frameworks
-#include "EnumExtensions.h"	// Naive methods for EE-IT,EE-UC
 #include "Problems.h"		// Methods for all supported Problems
 
 #include <iostream>			//std::cout
@@ -48,30 +15,23 @@ static int usage_flag = 0;
 static int formats_flag = 0;
 static int problems_flag = 0;
 
-task string_to_task(string problem)
-{
+task string_to_task(string problem) {
 	string tmp = problem.substr(0, problem.find("-"));
 	if (tmp == "DC") return DC;
 	if (tmp == "DS") return DS;
 	if (tmp == "SE") return SE;
 	if (tmp == "EE") return EE;
-	if (tmp == "CE") return CE;
 	return UNKNOWN_TASK;
 }
 
-semantics string_to_sem(string problem)
-{
+semantics string_to_sem(string problem) {
 	problem.erase(0, problem.find("-") + 1);
 	string tmp = problem.substr(0, problem.find("-"));
-	if (tmp == "IT") return IT;
-	if (tmp == "UC") return UC;
 	if (tmp == "PR") return PR;
-	if (tmp == "GR") return GR;
 	return UNKNOWN_SEM;
 }
 
-void print_usage(string solver_name)
-{
+void print_usage(string solver_name) {
 	cout << "Usage: " << solver_name << " -p <task> -f <file> -fo <format> [-a <query>]\n\n";
 	cout << "  <task>      computational problem; for a list of available problems use option --problems\n";
 	cout << "  <file>      input argumentation framework\n";
@@ -84,20 +44,17 @@ void print_usage(string solver_name)
 	cout << "  --problems  Prints available computational tasks.\n";
 }
 
-void print_version(string solver_name)
-{
+void print_version(string solver_name) {
 	cout << solver_name << " (version 1.0)\n" << "Lars Bengel, University of Hagen <lars.bengel@fernuni-hagen.de>\n";
 }
 
-void print_formats()
-{
-	cout << "[apx,tgf]\n";
+void print_formats() {
+	cout << "[i23]\n";
 }
 
-void print_problems()
-{
-	vector<string> tasks = {"DC", "DS", "SE", "EE", "CE"};
-	vector<string> sems = {"IT", "PR", "UC"};
+void print_problems() {
+	vector<string> tasks = {"DC", "DS", "SE", "EE"};
+	vector<string> sems = {"PR"};
 	cout << "[";
 	for (uint32_t i = 0; i < tasks.size(); i++) {
 		for (uint32_t j = 0; j < sems.size(); j++) {
@@ -108,8 +65,7 @@ void print_problems()
 	cout << "]\n";
 }
 
-int main(int argc, char ** argv)
-{
+int main(int argc, char ** argv) {
 	ios_base::sync_with_stdio(false);
 	cin.tie(NULL);
 
@@ -134,7 +90,8 @@ int main(int argc, char ** argv)
 
 	int option_index = 0;
 	int opt = 0;
-	string task, file, fileformat, query, sat_path;
+	string task, file, fileformat, sat_path;
+	int query = 0;
 
 	while ((opt = getopt_long_only(argc, argv, "", longopts, &option_index)) != -1) {
 		switch (opt) {
@@ -150,7 +107,7 @@ int main(int argc, char ** argv)
 				fileformat = optarg;
 				break;
 			case 'a':
-				query = optarg;
+				query = stoi(optarg);
 				break;
 			case 's':
 				sat_path = optarg;
@@ -202,44 +159,24 @@ int main(int argc, char ** argv)
 		cerr << argv[0] << ": Cannot open input file\n";
 		return 1;
 	}
-
-	AF af = AF();
-	vector<pair<string,string>> atts;
-	string line, arg, source, target;
 	
-	if (fileformat == "apx") {
-		while (!input.eof()) {
-			getline(input, line);
-			line.erase(remove_if(line.begin(), line.end(), ::isspace), line.end());
-			if (line.length() == 0 || line[0] == '/' || line[0] == '%') continue;
-			if (line.length() < 6) cerr << "Warning: Cannot parse line: " << line << "\n";
-			string op = line.substr(0,3);
-			if (op == "arg") {
-				if (line[3] == '(' && line.find(')') != string::npos) {
-					arg = line.substr(4,line.find(')')-4);
-					af.add_argument(arg);
-				} else {
-					cerr << "Warning: Cannot parse line: " << line << "\n";
-				}
-			} else if (op == "att") {
-				if (line[3] == '(' && line.find(',') != string::npos && line.find(')') != string::npos) {
-					source = line.substr(4,line.find(',')-4);
-					target = line.substr(line.find(',')+1,line.find(')')-line.find(',')-1);
-					atts.push_back(make_pair(source,target));
-				} else {
-					cerr << "Warning: Cannot parse line: " << line << "\n";
-				}
-			} else {
-				cerr << "Warning: Cannot parse line: " << line << "\n";
+	AF af = AF();
+	vector<pair<int,int>> atts;
+	string op, type, source, target;
+	int num_args;
+	if (fileformat == "i23") {
+		while (input >> op >> type >> num_args) {
+			if (op[0] == '#') continue;
+			if (op != "p" || type != "af") {
+				cerr << "Warning: Unexpected header: " << op << " " << type << "\n";
 			}
-		}
-	} else if (fileformat == "tgf") {
-		while (input >> arg) {
-			if (arg == "#") break;
-			af.add_argument(arg);
+			af.set_arguments(num_args);
+			af.initialize_attackers();
+			break;
 		}
 		while (input >> source >> target) {
-			atts.push_back(make_pair(source, target));
+			if (source[0] == '#') continue;
+			af.add_attack(make_pair(stoi(source), stoi(target)));
 		}
 	} else {
 		cerr << argv[0] << ": Unsupported file format\n";
@@ -249,6 +186,7 @@ int main(int argc, char ** argv)
 	input.close();
 
 	af.sem = string_to_sem(task);
+	af.set_solver_path(sat_path);
 
 #if defined(CONE_OF_INFLUENCE)
 	if (string_to_task(task) == DS) {
@@ -286,31 +224,20 @@ int main(int argc, char ** argv)
 	}
 #endif
 
-	af.initialize_attackers();
-
-	for (uint32_t i = 0; i < atts.size(); i++) {
-		af.add_attack(atts[i]);
-	}
-
-	af.initialize_vars();
-
-	af.set_solver_path(sat_path);
-
 	switch (string_to_task(task)) {
 		case DS:
 		{
-			if (query.empty()) {
+			if (query == 0) {
 				cerr << argv[0] << ": Query argument must be specified via -a flag\n";
+				return 1;
+			} else if (query > af.args) {
+				cerr << argv[0] << ": Query argument larger than number of arguments\n";
 				return 1;
 			}
 			bool skept_accepted = false;
 			switch (string_to_sem(task)) {
 				case PR:
-					//skept_accepted = Problems::mt_ds_preferred(af, query);
-					skept_accepted = Problems::ds_preferred(af, query, atts);
-					break;
-				case UC:
-					skept_accepted = Problems::ds_unchallenged(af, query, atts);
+					skept_accepted = Problems::mt_ds_preferred(af, query);
 					break;
 				default:
 					cerr << argv[0] << ": Unsupported semantics\n";
@@ -323,14 +250,6 @@ int main(int argc, char ** argv)
 		{
 			vector<string> extension;
 			switch (string_to_sem(task)) {
-				case GR:
-					extension = Problems::se_grounded(af);
-					print_extension_ee(extension);
-					cout << "\n";
-					break;
-				case IT:
-					Problems::se_initial(af);
-					break;
 				default:
 					cerr << argv[0] << ": Problem not supported!\n";
 					return 1;
@@ -340,25 +259,6 @@ int main(int argc, char ** argv)
 		case EE:
 		{
 			switch (string_to_sem(task)) {
-				case IT:
-					Problems::ee_initial(af);
-					break;
-				case UC:
-					//EnumExtensions::unchallenged_naive(af, atts);
-					Problems::ee_unchallenged(af, atts);
-					break;
-				default:
-					cerr << argv[0] << ": Problem not supported!\n";
-					return 1;
-			}
-			break;
-		}
-		case CE:
-		{
-			switch (string_to_sem(task)) {
-				case IT:
-					Problems::ce_initial(af);
-					break;
 				default:
 					cerr << argv[0] << ": Problem not supported!\n";
 					return 1;

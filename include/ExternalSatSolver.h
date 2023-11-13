@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <cstdint>
 
 /*
 Class for all kinds of pre-compiled SAT solvers, e.g. cadical, cryptominisat5

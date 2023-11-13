@@ -1,41 +1,10 @@
-/*!
- * The following is largely taken from the mu-toksia solver
- * and is subject to the following licence.
- * 
- * 
- * Copyright (c) <2020> <Andreas Niskanen, University of Helsinki>
- * 
- * 
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * 
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * 
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 #ifndef ARGU_FRAMEWORK_H
 #define ARGU_FRAMEWORK_H
 
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <cstdint>
 
 enum task { DC, DS, SE, EE, CE, UNKNOWN_TASK };
 enum semantics { IT, UC, PR, GR, UNKNOWN_SEM };
@@ -96,28 +65,21 @@ AF();
 semantics sem;
 std::string solver_path;
 
-uint32_t args;
-uint32_t count;
 
-std::vector<std::string> int_to_arg;
-std::unordered_map<std::string,uint32_t> arg_to_int;
+int args;
 
-std::vector<std::vector<uint32_t>> attacked;
-std::vector<std::vector<uint32_t>> attackers;
+std::vector<std::vector<int>> attacked;
+std::vector<std::vector<int>> attackers;
 std::vector<bool> unattacked;
 std::vector<uint8_t> self_attack;
-std::unordered_map<std::pair<uint32_t,uint32_t>,bool> att_exists;
-std::unordered_map<std::pair<uint32_t,uint32_t>,bool> symmetric_attack;
+std::unordered_map<std::pair<int,int>,bool> att_exists;
+std::unordered_map<std::pair<int,int>,bool> symmetric_attack;
 
-std::vector<int> accepted_var;
-std::vector<int> range_var;
-std::vector<int> rejected_var;
 
-void add_argument(std::string arg);
-void add_attack(std::pair<std::string,std::string> att);
+void set_arguments(int num_args);
+void add_attack(std::pair<int,int> att);
 
 void initialize_attackers();
-void initialize_vars();
 
 void set_solver_path(std::string path);
 
