@@ -60,7 +60,7 @@ namespace std
 class AF {
 public:
 
-AF();
+AF(int num_args);
 
 semantics sem;
 std::string solver_path;
@@ -68,18 +68,29 @@ std::string solver_path;
 
 int args;
 
-std::vector<std::vector<int>> attacked;
-std::vector<std::vector<int>> attackers;
-std::vector<bool> unattacked;
-std::vector<uint8_t> self_attack;
-std::unordered_map<std::pair<int,int>,bool> att_exists;
-std::unordered_map<std::pair<int,int>,bool> symmetric_attack;
+std::vector<std::vector<int>>* attacked;
+std::vector<std::vector<int>>* attackers;
+std::vector<bool>* unattacked;
+std::vector<bool>* self_attack;
+std::unordered_map<std::pair<int,int>,bool>* att_exists;
+std::unordered_map<std::pair<int,int>,bool>* symmetric_attack;
+
+bool* self;
+
+
+int num_active;
+std::vector<int> active_args;
+std::vector<bool> is_active;
+
+std::vector<int> accepted_var;
+std::vector<int> rejected_var;
 
 
 void set_arguments(int num_args);
 void add_attack(std::pair<int,int> att);
 
 void initialize_attackers();
+void initialize_vars();
 
 void set_solver_path(std::string path);
 

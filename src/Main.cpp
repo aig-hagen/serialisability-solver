@@ -190,22 +190,22 @@ int main(int argc, char ** argv) {
 
 #if defined(CONE_OF_INFLUENCE)
 	if (string_to_task(task) == DS) {
-		vector<vector<uint32_t>> attackers;
-		attackers.resize(af.args);
-		for (uint32_t i = 0; i < atts.size(); i++) {
-			attackers[af.arg_to_int[atts[i].second]].push_back(af.arg_to_int[atts[i].first]);
-		}
+		//vector<vector<uint32_t>> attackers;
+		//attackers.resize(af.args);
+		//for (uint32_t i = 0; i < atts.size(); i++) {
+		//	attackers[af.arg_to_int[atts[i].second]].push_back(af.arg_to_int[atts[i].first]);
+		//}
 
-		vector<uint8_t> visited(af.args, 0);
+		vector<bool> visited(af.args);
 		stack<uint32_t> stack;
-		stack.push(af.arg_to_int.at(query));
+		stack.push(query);
 		uint32_t arg;
 
 		while (!stack.empty()) {
 			arg = stack.top();
 			stack.pop();
 			if(!visited[arg]) {
-				visited[arg] = 1;
+				visited[arg] = true;
 			}
 			for (uint32_t i = 0; i < attackers[arg].size(); i++) {
 				if (!visited[attackers[arg][i]]) {
@@ -213,14 +213,14 @@ int main(int argc, char ** argv) {
 				}
 			}
 		}
-
-		AF new_af = AF();
-		for (uint32_t i = 0; i < af.args; i++) {
-			if (visited[i]) {
-				new_af.add_argument(af.int_to_arg[i]);
-			}
-		}
-		af = move(new_af);
+		AF new_af = getReduct(af, visited);
+		//AF new_af = AF();
+		//for (uint32_t i = 0; i < af.args; i++) {
+		//	if (visited[i]) {
+		//		new_af.add_argument(af.int_to_arg[i]);
+		//	}
+		//}
+		//af = move(new_af);
 	}
 #endif
 

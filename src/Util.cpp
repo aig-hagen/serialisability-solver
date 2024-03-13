@@ -29,6 +29,31 @@ void print_extension_ee(const std::set<string> & extension) {
 	}
 	std::cout << "]";
 }
+
+AF getReduct(const AF & af, vector<bool> model) {
+	AF reduct = AF();
+	reduct.set_arguments(af.args);
+	reduct.attacked = af.attacked;
+	reduct.attackers = af.attackers;
+	reduct.self_attack = af.self_attack;
+	reduct.unattacked = af.unattacked;
+	reduct.symmetric_attack = af.symmetric_attack;
+	reduct.att_exists = af.att_exists;
+
+	reduct.is_active.resize(af.args+1, false);
+	reduct.active_args.reserve(af.args);
+
+	for(int i = 1; i <= af.args; i++) {
+		if (model[i] || model[af.args+i]) {
+			continue;
+		}
+		reduct.is_active[i] = true;
+		reduct.active_args.push_back(i);
+		reduct.num_active++;		
+	}
+	return reduct;
+}
+
 /*
 AF getReduct(const AF & af, vector<string> ext, vector<pair<string,string>> & atts) {
 	if (ext.empty()) {
@@ -90,7 +115,7 @@ int __scc__compute_strongly_connected_components(int idx, uint32_t v, stack<uint
 	idx++;
     arg_stack->push(v);
 	stack_member[v] = true;
-    for(auto const& w: af.attacked[v]){
+    for(auto const& w: (*af.attacked)[v]){
         if (index[w] == -1) {
 	        idx = __scc__compute_strongly_connected_components(idx, w, arg_stack, sccs, af, index, lowlink, stack_member);
     	    lowlink[v] = lowlink[v] > lowlink[w] ? lowlink[w] : lowlink[v];
